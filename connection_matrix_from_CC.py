@@ -5,8 +5,8 @@ import spynnaker8 as sim
 import numpy as np
 #import logging
 import matplotlib.pyplot as plt
-from decode_events import*
-from functions import*
+# from decode_events import*
+# from functions import*
 import yarp
 
 from pacman.model.constraints.key_allocator_constraints import FixedKeyAndMaskConstraint

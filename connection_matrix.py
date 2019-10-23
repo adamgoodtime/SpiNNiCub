@@ -144,9 +144,6 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
     max_filters_x = int(x_res / (filter_width * (1-overlap)))
     max_filters_y = int(y_res / (filter_height * (1-overlap)))
 
-    # calculate all filter corners for later processing
-    corners_list = create_filter_boundaries(filter_width, filter_height, overlap)
-
     # create the filter which is to be copied in a grid like fashion around the visual field
     filter_split_matrix = []
     filter_matrix = []
@@ -169,6 +166,9 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
         filter_matrix.append(filter_row)
         xs.append(x)
         ys.append(y)
+
+    # calculate all filter corners for later processing
+    corners_list = create_filter_boundaries(filter_width, filter_height, overlap)
 
     # copy the filter dimensions around the board
     visual_matrix = []
@@ -231,22 +231,22 @@ def proto_objects(on_populations, off_populations, filter_width, filter_height, 
                 n2 = (i) + ((j+1) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                          label='{}-{}-up'.format(i, j+1)))
-                p.Projection(on_populations[2], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
-                p.Projection(off_populations[6], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                p.Projection(on_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                p.Projection(off_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                          label='{}-{}-down'.format(i, j+1)))
-                p.Projection(on_populations[6], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
-                p.Projection(off_populations[2], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                p.Projection(on_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                p.Projection(off_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
                 if i - 1 >= 0:
                     n2 = (i-1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                              label='{}-{}-upl'.format(i, j+1)))
-                    p.Projection(on_populations[3], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
-                    p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                    p.Projection(on_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                    p.Projection(off_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                              label='{}-{}-downr'.format(i, j+1)))
-                    p.Projection(on_populations[7], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
-                    p.Projection(off_populations[3], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                    p.Projection(on_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                    p.Projection(off_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
             if i + 1 < max_filters_x:
                 n2 = (i+1) + ((j) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
@@ -261,12 +261,12 @@ def proto_objects(on_populations, off_populations, filter_width, filter_height, 
                     n2 = (i+1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                              label='{}-{}-upr'.format(i, j+1)))
-                    p.Projection(on_populations[1], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
-                    p.Projection(off_populations[5], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                    p.Projection(on_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                    p.Projection(off_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
                                                              label='{}-{}-downl'.format(i, j+1)))
-                    p.Projection(on_populations[5], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
-                    p.Projection(off_populations[1], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
+                    p.Projection(on_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight/2., 1]]))
+                    p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
     return proto_object_neurons
 
 # depricated
@@ -321,11 +321,96 @@ def parse_ATIS(file_location, file_name):
             off_events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return on_events, off_events
 
+def test_orientation(filter_width, filter_height, overlap=0., filter_split=4, rotation=0,
+                              base_weight=1., percentage_fire_threshold=0.5, plot=False):
+    max_filters_x = int(x_res / (filter_width * (1-overlap)))
+    max_filters_y = int(y_res / (filter_height * (1-overlap)))
+
+    # create the filter which is to be copied in a grid like fashion around the visual field
+    filter_matrix = []
+    rotated_matrix = []
+    xs = []
+    ys = []
+    for i in range(filter_width):
+        filter_row = []
+        rotate_row = []
+        x = []
+        y = []
+        for j in range(filter_height):
+            x_value = ((float(i) / float(filter_width)) * 2) - 1
+            y_value = ((float(j) / float(filter_height)) * 2) - 1
+            pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
+            rotate_value, split = VM(x_value, y_value, theta=rotation+4, filter_split=filter_split)
+            x.append(x_value)
+            y.append(y_value)
+            filter_row.append(pixel_value)
+            rotate_row.append(rotate_value)
+        filter_matrix.append(filter_row)
+        rotated_matrix.append(rotate_row)
+        xs.append(x)
+        ys.append(y)
+
+    # calculate all filter corners for later processing
+    corners_list = [[filter_width, filter_height]] #create_filter_boundaries(filter_width, filter_height, overlap)
+
+    # copy the filter dimensions around the board
+    visual_matrix = []
+    visual_rotate = []
+    rotate_x = -filter_width
+    rotate_y = filter_height
+    xs = []
+    ys = []
+    xsr = []
+    ysr = []
+    for corner in corners_list:
+        for filter_x in range(len(filter_matrix)):
+            x = []
+            y = []
+            xr = []
+            yr = []
+            visual_row = []
+            rotate_row = []
+            for filter_y in range(len(filter_matrix[0])):
+                x_offset = corner[0] - filter_width
+                y_offset = corner[1] - filter_height
+                x.append(x_offset + filter_x)
+                y.append(y_offset + filter_y)
+                xr.append(x_offset + filter_x + rotate_x)
+                yr.append(y_offset + filter_y + rotate_y)
+                visual_row.append(filter_matrix[filter_x][filter_y])
+                rotate_row.append(rotated_matrix[filter_x][filter_y])
+                # if filter_matrix[filter_x][filter_y] and filter_split_matrix[filter_x][filter_y] >= 0:
+                #     pixel_value = convert_pixel_to_id(x_offset + filter_x, y_offset + filter_y)
+                #     split_value = filter_split_matrix[filter_x][filter_y]
+                #     neuron_id = (corner[2] * filter_split) + (max_filters_x * corner[3] * filter_split) + split_value
+                #     # print neuron_id
+                #     neuron_id_count[neuron_id] += 1
+            xs.append(x)
+            ys.append(y)
+            xsr.append(xr)
+            ysr.append(yr)
+            visual_matrix.append(visual_row)
+            visual_rotate.append(rotate_row)
+
+    if plot:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(visual_matrix))
+        ax.plot_wireframe(np.array(xsr), np.array(ysr), np.array(visual_rotate))
+        plt.show()
+    return None
+
 # generate_visual_field(3, 2, rotation=1, plot=True)
 # first_layer_connections_r0 = visual_field_with_overlap(100, 100, 0., plot=False)
 
 x_res = 304
 y_res = 240
+
+# test_orientation(100, 100, rotation=0, plot=True)
+# test_orientation(100, 100, rotation=1, plot=True)
+# test_orientation(100, 100, rotation=2, plot=True)
+# test_orientation(100, 100, rotation=3, plot=True)
+
 neuron_params = {
     # balance the refractory period/tau_mem so membrane has lost contribution before next spike
 }
@@ -363,17 +448,17 @@ for filter in list_of_filter_sizes:
                                                            base_weight=base_weight/float(filter_split),
                                                            percentage_fire_threshold=percentage_fire_threshold)
         # create neurons for each segment of filter
-        on_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
-                                          label='on seg {} - {}'.format(filter, rotation))
-        off_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
-                                           label='off seg {} - {}'.format(filter, rotation))
-        # on_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+        # on_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
         #                                   label='on seg {} - {}'.format(filter, rotation))
-        # off_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+        # off_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
         #                                    label='off seg {} - {}'.format(filter, rotation))
-        # # project events to neurons/filter segments
-        # p.Projection(on_population, on_filter_segments, p.FromListConnector(connection))
-        # p.Projection(off_population, off_filter_segments, p.FromListConnector(connection))
+        on_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                          label='on seg {} - {}'.format(filter, rotation))
+        off_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                           label='off seg {} - {}'.format(filter, rotation))
+        # project events to neurons/filter segments
+        p.Projection(on_population, on_filter_segments, p.FromListConnector(connection))
+        p.Projection(off_population, off_filter_segments, p.FromListConnector(connection))
         # connect segments into a single filter neuron
         filter_connections = create_filter_neuron_connections(filter_split=filter_split,
                                                               no_neurons=no_neurons,
