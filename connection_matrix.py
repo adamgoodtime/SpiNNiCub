@@ -416,10 +416,11 @@ neuron_params = {
 }
 # connection configurations:
 list_of_filter_sizes = [
-    # [46, 46],
+    [46, 46],
+    [70, 70],
     [100, 100]]
 filter_split = 4
-overlap = 0.
+overlap = 0.6
 base_weight = 5
 percentage_fire_threshold = 0.8
 
@@ -437,6 +438,8 @@ first_layer_populations = [[], []] # off and on
 for filter in list_of_filter_sizes:
     print "SpiNN setup for filter", filter
     # for each rotation, 0 -> 7pi/4
+    on_filter_segments = []
+    off_filter_segments = []
     on_filter_populations = []
     off_filter_populations = []
     for rotation in range(8):
@@ -452,27 +455,27 @@ for filter in list_of_filter_sizes:
         #                                   label='on seg {} - {}'.format(filter, rotation))
         # off_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
         #                                    label='off seg {} - {}'.format(filter, rotation))
-        on_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                          label='on seg {} - {}'.format(filter, rotation))
-        off_filter_segments = p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                           label='off seg {} - {}'.format(filter, rotation))
+        on_filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                               label='on seg {} - {}'.format(filter, rotation)))
+        off_filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                                label='off seg {} - {}'.format(filter, rotation)))
         # project events to neurons/filter segments
-        p.Projection(on_population, on_filter_segments, p.FromListConnector(connection))
-        p.Projection(off_population, off_filter_segments, p.FromListConnector(connection))
+        p.Projection(on_population, on_filter_segments[-1], p.FromListConnector(connection))
+        p.Projection(off_population, off_filter_segments[-1], p.FromListConnector(connection))
         # connect segments into a single filter neuron
         filter_connections = create_filter_neuron_connections(filter_split=filter_split,
                                                               no_neurons=no_neurons,
                                                               base_weight=base_weight)
         on_filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                   label='on {} - {}'.format(filter, rotation)))
-        p.Projection(on_filter_segments, on_filter_populations[-1], p.FromListConnector(filter_connections))
+        p.Projection(on_filter_segments[-1], on_filter_populations[-1], p.FromListConnector(filter_connections))
         off_filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                    label='off {} - {}'.format(filter, rotation)))
-        p.Projection(off_filter_segments, off_filter_populations[-1], p.FromListConnector(filter_connections))
+        p.Projection(off_filter_segments[-1], off_filter_populations[-1], p.FromListConnector(filter_connections))
         off_filter_populations[-1].record('all')
         on_filter_populations[-1].record('all')
-        on_filter_segments.record('all')
-        off_filter_segments.record('all')
+        on_filter_segments[-1].record('all')
+        off_filter_segments[-1].record('all')
 
     # create proto object
     proto_object_pop = proto_objects(on_filter_populations, off_filter_populations, filter[0], filter[1], base_weight)
@@ -480,23 +483,23 @@ for filter in list_of_filter_sizes:
     # mutually inhibit everything? #
     ################################
     # opposite inhibition for filter segments
-    for rotation in range(4):
-        p.Projection(on_filter_populations[rotation], on_filter_populations[rotation+4],
-                     p.OneToOneConnector(),
-                     p.StaticSynapse(weight=base_weight, delay=1),
-                     receptor_type='inhibitory')
-        p.Projection(on_filter_populations[rotation+4], on_filter_populations[rotation],
-                     p.OneToOneConnector(),
-                     p.StaticSynapse(weight=base_weight, delay=1),
-                     receptor_type='inhibitory')
-        p.Projection(off_filter_populations[rotation], off_filter_populations[rotation+4],
-                     p.OneToOneConnector(),
-                     p.StaticSynapse(weight=base_weight, delay=1),
-                     receptor_type='inhibitory')
-        p.Projection(off_filter_populations[rotation+4], off_filter_populations[rotation],
-                     p.OneToOneConnector(),
-                     p.StaticSynapse(weight=base_weight, delay=1),
-                     receptor_type='inhibitory')
+    # for rotation in range(4):
+    #     p.Projection(on_filter_populations[rotation], on_filter_populations[rotation+4],
+    #                  p.OneToOneConnector(),
+    #                  p.StaticSynapse(weight=base_weight, delay=1),
+    #                  receptor_type='inhibitory')
+    #     p.Projection(on_filter_populations[rotation+4], on_filter_populations[rotation],
+    #                  p.OneToOneConnector(),
+    #                  p.StaticSynapse(weight=base_weight, delay=1),
+    #                  receptor_type='inhibitory')
+    #     p.Projection(off_filter_populations[rotation], off_filter_populations[rotation+4],
+    #                  p.OneToOneConnector(),
+    #                  p.StaticSynapse(weight=base_weight, delay=1),
+    #                  receptor_type='inhibitory')
+    #     p.Projection(off_filter_populations[rotation+4], off_filter_populations[rotation],
+    #                  p.OneToOneConnector(),
+    #                  p.StaticSynapse(weight=base_weight, delay=1),
+    #                  receptor_type='inhibitory')
     first_layer_populations[0].append(off_filter_populations)
     first_layer_populations[1].append(on_filter_populations)
 
@@ -504,9 +507,28 @@ for object in proto_object_pop:
     object.record('all')
 p.run(15*1000)
 
+print "saving"
+on_filter_segments_data = []
+for data in on_filter_segments:
+    on_filter_segments_data.append(data.get_data())
+np.save('on filter segments data.npy', on_filter_segments_data)
+off_filter_segments_data = []
+for data in off_filter_segments:
+    off_filter_segments_data.append(data.get_data())
+np.save('off filter segments data.npy', off_filter_segments_data)
+on_filter_populations_data = []
+for data in on_filter_populations:
+    on_filter_populations_data.append(data.get_data())
+np.save('on filter population data.npy', on_filter_populations_data)
+off_filter_populations_data = []
+for data in off_filter_populations:
+    off_filter_populations_data.append(data.get_data())
+np.save('off filter population data.npy', off_filter_populations_data)
 object_data = []
 for object in proto_object_pop:
     object_data.append(object.get_data())
+np.save('proto object data.npy', object_data)
+print "all saved"
 
 # pop_rec_data = pop_rec.get_data('spikes')
 # pop_out_data = pop_out.get_data()
