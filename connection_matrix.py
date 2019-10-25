@@ -481,6 +481,8 @@ for filter in list_of_filter_sizes:
         print "number of neurons in segments = ", no_neurons * 2
         print "number of neurons in filters = ", (no_neurons/filter_split) * 2
 
+    print "total number of neurons in segments = ", no_neurons * 2 * 8
+    print "total number of neurons in filters = ", (no_neurons / filter_split) * 2 * 8
     # create proto object
     proto_object_pop = proto_objects(on_filter_populations, off_filter_populations, filter[0], filter[1], base_weight)
     ################################
