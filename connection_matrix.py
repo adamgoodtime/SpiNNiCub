@@ -87,7 +87,7 @@ def generate_matrix(resolution=46, filter_split=4, rotation=0, plot=False):
     return banana_matrix
 
 def convert_pixel_to_id(x, y):
-    return (y*304) + x
+    return (y*x_res) + x
 
 #depricated
 def generate_visual_field(no_filter_x, no_filter_y, filter_split=4, rotation=0, plot=False):
@@ -418,9 +418,12 @@ neuron_params = {
 }
 # connection configurations:
 list_of_filter_sizes = [
-    [46, 46],
-    [70, 70],
-    [100, 100]]
+    # [46, 46],
+    # [70, 70],
+    # [100, 100],
+    [15, 15],
+    [10, 10],
+    [20, 20]]
 filter_split = 4
 overlap = 0.6
 base_weight = 5
@@ -451,7 +454,8 @@ for filter in list_of_filter_sizes:
                                                            rotation=rotation,
                                                            filter_split=filter_split,
                                                            base_weight=base_weight/float(filter_split),
-                                                           percentage_fire_threshold=percentage_fire_threshold)
+                                                           percentage_fire_threshold=percentage_fire_threshold,
+                                                           plot=False)
         # create neurons for each segment of filter
         # on_filter_segments = p.Population(no_neurons, p.SpikeSourcePoisson(rate=100),
         #                                   label='on seg {} - {}'.format(filter, rotation))
