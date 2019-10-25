@@ -32,7 +32,7 @@ def zero_2pi_tan(x, y, theta=0):
     return angle #+ theta
 
 # Von Mises filter function, takes values between -1 and 1 and outputs the corresponding value
-def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=7):
+def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
     theta *= np.pi/4
     # rescaling of x and y for correct filter placement
     x = (x*15) + (0.8*r) * np.cos(theta)
@@ -57,7 +57,7 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=7):
 
 # depricated
 # Creates a matrix of values for a particular resolution and rotation of the VM filter
-def generate_matrix(resolution=46, rotation=0, plot=False):
+def generate_matrix(resolution=46, filter_split=4, rotation=0, plot=False):
     rotation_matrix = []
     banana_matrix = []
     xs = []
@@ -70,7 +70,7 @@ def generate_matrix(resolution=46, rotation=0, plot=False):
         for j in range(-resolution, resolution):
             x.append(float(i) / float(resolution))
             y.append(float(j) / float(resolution))
-            banan, split = VM(float(i)/float(resolution), float(j)/float(resolution), theta=rotation)
+            banan, split = VM(float(i)/float(resolution), float(j)/float(resolution),filter_split=filter_split, theta=rotation)
             banana_row.append(round(banan, 2))
             rotation_row.append(split)
         xs.append(x)
@@ -356,8 +356,8 @@ def test_orientation(filter_width, filter_height, overlap=0., filter_split=4, ro
     # copy the filter dimensions around the board
     visual_matrix = []
     visual_rotate = []
-    rotate_x = -filter_width
-    rotate_y = filter_height
+    rotate_x = filter_width * (1-overlap)
+    rotate_y = filter_height * (1-overlap)
     xs = []
     ys = []
     xsr = []
@@ -400,14 +400,16 @@ def test_orientation(filter_width, filter_height, overlap=0., filter_split=4, ro
         plt.show()
     return None
 
-# generate_visual_field(3, 2, rotation=1, plot=True)
-# first_layer_connections_r0 = visual_field_with_overlap(100, 100, 0., plot=False)
-
 x_res = 304
 y_res = 240
 
+# generate_matrix(filter_split=4, plot=True)
+
+# generate_visual_field(3, 2, rotation=1, plot=True)
+# first_layer_connections_r0 = visual_field_with_overlap(100, 100, 0., plot=False)
+
 # test_orientation(100, 100, rotation=0, plot=True)
-# test_orientation(100, 100, rotation=1, plot=True)
+# test_orientation(100, 100, rotation=3, overlap=0.6, plot=True)
 # test_orientation(100, 100, rotation=2, plot=True)
 # test_orientation(100, 100, rotation=3, plot=True)
 
@@ -476,6 +478,8 @@ for filter in list_of_filter_sizes:
         on_filter_populations[-1].record('all')
         on_filter_segments[-1].record('all')
         off_filter_segments[-1].record('all')
+        print "number of neurons in segments = ", no_neurons * 2
+        print "number of neurons in filters = ", (no_neurons/filter_split) * 2
 
     # create proto object
     proto_object_pop = proto_objects(on_filter_populations, off_filter_populations, filter[0], filter[1], base_weight)
@@ -503,6 +507,7 @@ for filter in list_of_filter_sizes:
     first_layer_populations[0].append(off_filter_populations)
     first_layer_populations[1].append(on_filter_populations)
 
+print "number of neurons in proto-objects = ", len(proto_object_pop)
 for object in proto_object_pop:
     object.record('all')
 p.run(15*1000)
