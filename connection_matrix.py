@@ -21,7 +21,7 @@ Components:
 - inhibit between competing objects
 '''
 
-def zero_2pi_tan(x, y, theta=0):
+def zero_2pi_tan(x, y):
     angle = np.arctan2(y, x)
     if angle < 0:
         angle += np.pi * 2
@@ -29,7 +29,7 @@ def zero_2pi_tan(x, y, theta=0):
         angle -= 6 * np.pi / 4
     else:
         angle += np.pi / 2
-    return angle #+ theta
+    return angle
 
 # Von Mises filter function, takes values between -1 and 1 and outputs the corresponding value
 def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
@@ -55,74 +55,8 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
         VM_output = 1#-= threshold
     return VM_output, split
 
-# depricated
-# Creates a matrix of values for a particular resolution and rotation of the VM filter
-def generate_matrix(resolution=46, filter_split=4, rotation=0, plot=False):
-    rotation_matrix = []
-    banana_matrix = []
-    xs = []
-    ys = []
-    for i in range(-resolution, resolution):
-        x = []
-        y = []
-        banana_row = []
-        rotation_row = []
-        for j in range(-resolution, resolution):
-            x.append(float(i) / float(resolution))
-            y.append(float(j) / float(resolution))
-            banan, split = VM(float(i)/float(resolution), float(j)/float(resolution),filter_split=filter_split, theta=rotation)
-            banana_row.append(round(banan, 2))
-            rotation_row.append(split)
-        xs.append(x)
-        ys.append(y)
-        banana_matrix.append(banana_row)
-        rotation_matrix.append(rotation_row)
-
-    if plot:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(banana_matrix))
-        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(rotation_matrix))
-        plt.show()
-    return banana_matrix
-
 def convert_pixel_to_id(x, y):
     return (y*x_res) + x
-
-#depricated
-def generate_visual_field(no_filter_x, no_filter_y, filter_split=4, rotation=0, plot=False):
-    # create inputs of -1 to 1 for entire visual field, assuming no overlap for now
-    filter_x_res = x_res / no_filter_x
-    filter_y_res = y_res / no_filter_y
-    connection_list = []
-    visual_matrix = []
-    xs = []
-    ys = []
-    for i in range(x_res):
-        visual_row = []
-        x = []
-        y = []
-        for j in range(y_res):
-            x_value = (float(i % filter_x_res) / float(filter_x_res / 2)) - 1.
-            y_value = (float(j % filter_y_res) / float(filter_y_res / 2)) - 1.
-            pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
-            if pixel_value > 0 and split >= 0:
-                neuron_index = int(y_res / filter_y_res) + (int(x_res / filter_x_res) * no_filter_y) + filter_split
-                filter_identifier = [int(y_res / filter_y_res), int(x_res / filter_x_res), filter_split, rotation]
-                connection_list.append([convert_pixel_to_id(i, j), neuron_index, filter_identifier])
-            x.append(i)
-            y.append(j)
-            visual_row.append(pixel_value)
-        visual_matrix.append(visual_row)
-        xs.append(x)
-        ys.append(y)
-
-    if plot:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(visual_matrix))
-        plt.show()
-    return visual_matrix
 
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     list_of_corners = []
@@ -269,40 +203,6 @@ def proto_objects(on_populations, off_populations, filter_width, filter_height, 
                     p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight/2., 1]]))
     return proto_object_neurons
 
-# depricated
-def create_proto_object_connections(on_populations, off_populations, filter_width, filter_height, base_weight):
-    max_filters_x = int(x_res / (filter_width * (1 - overlap)))
-    max_filters_y = int(y_res / (filter_height * (1 - overlap)))
-    horizontal_connections = []
-    veritcal_connections = []
-    bot_left_connections = []
-    top_left_connections = []
-    # create the connections
-    for i in range(max_filters_x):
-        for j in range(max_filters_y):
-            n1 = (i) + (j * max_filters_x)
-            if j + 1 < max_filters_y:
-                n2 = (i) + ((j + 1) * max_filters_x)
-                veritcal_connections.append([n1, n2, base_weight / 2., 1])
-                veritcal_connections.append([n2, n1, base_weight / 2., 1])
-                if i - 1 >= 0:
-                    n2 = (i - 1) + ((j + 1) * max_filters_x)
-                    top_left_connections.append([n1, n2, base_weight / 2., 1])
-                    top_left_connections.append([n2, n1, base_weight / 2., 1])
-            if i + 1 < max_filters_x:
-                n2 = (i + 1) + ((j) * max_filters_x)
-                horizontal_connections.append([n1, n2, base_weight / 2., 1])
-                horizontal_connections.append([n2, n1, base_weight / 2., 1])
-                if j + 1 < max_filters_y:
-                    n2 = (i + 1) + ((j + 1) * max_filters_x)
-                    bot_left_connections.append([n1, n2, base_weight / 2., 1])
-                    bot_left_connections.append([n2, n1, base_weight / 2., 1])
-    # connect them up
-    for rotation in range(8):
-        p.Projection(on_population, off_population, p.FromListConnector(horizontal_connections))
-        # and the rest
-    print "done"
-
 def parse_ATIS(file_location, file_name):
     f = open("{}/{}".format(file_location, file_name), "r")
     on_events = [[] for i in range(x_res*y_res)]
@@ -321,97 +221,10 @@ def parse_ATIS(file_location, file_name):
             off_events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return on_events, off_events
 
-def test_orientation(filter_width, filter_height, overlap=0., filter_split=4, rotation=0,
-                              base_weight=1., percentage_fire_threshold=0.5, plot=False):
-    max_filters_x = int(x_res / (filter_width * (1-overlap)))
-    max_filters_y = int(y_res / (filter_height * (1-overlap)))
-
-    # create the filter which is to be copied in a grid like fashion around the visual field
-    filter_matrix = []
-    rotated_matrix = []
-    xs = []
-    ys = []
-    for i in range(filter_width):
-        filter_row = []
-        rotate_row = []
-        x = []
-        y = []
-        for j in range(filter_height):
-            x_value = ((float(i) / float(filter_width)) * 2) - 1
-            y_value = ((float(j) / float(filter_height)) * 2) - 1
-            pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
-            rotate_value, split = VM(x_value, y_value, theta=rotation+4, filter_split=filter_split)
-            x.append(x_value)
-            y.append(y_value)
-            filter_row.append(pixel_value)
-            rotate_row.append(rotate_value)
-        filter_matrix.append(filter_row)
-        rotated_matrix.append(rotate_row)
-        xs.append(x)
-        ys.append(y)
-
-    # calculate all filter corners for later processing
-    corners_list = [[filter_width, filter_height]] #create_filter_boundaries(filter_width, filter_height, overlap)
-
-    # copy the filter dimensions around the board
-    visual_matrix = []
-    visual_rotate = []
-    rotate_x = filter_width * (1-overlap)
-    rotate_y = filter_height * (1-overlap)
-    xs = []
-    ys = []
-    xsr = []
-    ysr = []
-    for corner in corners_list:
-        for filter_x in range(len(filter_matrix)):
-            x = []
-            y = []
-            xr = []
-            yr = []
-            visual_row = []
-            rotate_row = []
-            for filter_y in range(len(filter_matrix[0])):
-                x_offset = corner[0] - filter_width
-                y_offset = corner[1] - filter_height
-                x.append(x_offset + filter_x)
-                y.append(y_offset + filter_y)
-                xr.append(x_offset + filter_x + rotate_x)
-                yr.append(y_offset + filter_y + rotate_y)
-                visual_row.append(filter_matrix[filter_x][filter_y])
-                rotate_row.append(rotated_matrix[filter_x][filter_y])
-                # if filter_matrix[filter_x][filter_y] and filter_split_matrix[filter_x][filter_y] >= 0:
-                #     pixel_value = convert_pixel_to_id(x_offset + filter_x, y_offset + filter_y)
-                #     split_value = filter_split_matrix[filter_x][filter_y]
-                #     neuron_id = (corner[2] * filter_split) + (max_filters_x * corner[3] * filter_split) + split_value
-                #     # print neuron_id
-                #     neuron_id_count[neuron_id] += 1
-            xs.append(x)
-            ys.append(y)
-            xsr.append(xr)
-            ysr.append(yr)
-            visual_matrix.append(visual_row)
-            visual_rotate.append(rotate_row)
-
-    if plot:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(visual_matrix))
-        ax.plot_wireframe(np.array(xsr), np.array(ysr), np.array(visual_rotate))
-        plt.show()
-    return None
-
 x_res = 304
 y_res = 240
-
-# generate_matrix(filter_split=4, plot=True)
-
-# generate_visual_field(3, 2, rotation=1, plot=True)
-# first_layer_connections_r0 = visual_field_with_overlap(100, 100, 0., plot=False)
-
-# test_orientation(100, 100, rotation=0, plot=True)
-# test_orientation(100, 100, rotation=3, overlap=0.6, plot=True)
-# test_orientation(100, 100, rotation=2, plot=True)
-# test_orientation(100, 100, rotation=3, plot=True)
+fovea_x = 100
+fovea_y = 100
 
 neuron_params = {
     # balance the refractory period/tau_mem so membrane has lost contribution before next spike

@@ -100,9 +100,10 @@ class DataManager:
                 b_ts = b[1]
                 ev = np.array(b[2].split(' '), dtype=np.uint32)
                 ev = ev.reshape(int(len(ev)/2), 2)
-                timestamps, channel, x, y, polarity = self.decode_events_24bit(ev)[0]
-                AE_to_save.append(np.array([timestamps, channel, x, y, polarity]))       # SELECT WHAT TO SAVE
-        AE_to_save = np.array(AE_to_save)
+                # timestamps, channel, x, y, polarity = self.decode_events_24bit(ev)
+                AE_to_save.append(np.array(self.decode_events_24bit(ev)))       # SELECT WHAT TO SAVE
+                # AE_to_save.append(np.array([timestamps, channel, x, y, polarity]))       # SELECT WHAT TO SAVE
+        AE_to_save = np.vstack(AE_to_save)
         AE_to_save[:, 0] = (AE_to_save[:, 0] - AE_to_save[0, 0]) * 80e-9  # 80ns to normalize w.r.t. the clock
         np.savetxt(os.path.join(AE_file_path, 'decoded_events.txt'), AE_to_save, delimiter=',', fmt=['%f', '%d', '%d', '%d', '%d'])     # SPECIFY THE FORMAT OF THE DATA
 
