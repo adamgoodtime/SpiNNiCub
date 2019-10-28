@@ -363,35 +363,35 @@ np.save('proto object data {}.npy'.format(label), object_data)
 print "all saved"
 
 on_filter_segments_spikes = 0
-for pop in on_filter_segments_data:
+for idx, pop in enumerate(on_filter_segments_data):
     spikes = pop.segments[0].spiketrains
-    for neuron in spikes:
+    for id2, neuron in enumerate(spikes):
         on_filter_segments_spikes += neuron.size
-        print "on segment spike count:", neuron.size
+        print idx, "-", id2, "on segment spike count:", neuron.size
 off_filter_segments_spikes = 0
-for pop in off_filter_segments_data:
+for idx, pop in enumerate(off_filter_segments_data):
     spikes = pop.segments[0].spiketrains
-    for neuron in spikes:
+    for id2, neuron in enumerate(spikes):
         off_filter_segments_spikes += neuron.size
-        print "off segment spike count:", neuron.size
+        print idx, "-", id2, "off segment spike count:", neuron.size
 on_filter_pop_spikes = 0
-for pop in on_filter_populations_data:
+for idx, pop in enumerate(on_filter_populations_data):
     spikes = pop.segments[0].spiketrains
-    for neuron in spikes:
+    for id2, neuron in enumerate(spikes):
         on_filter_pop_spikes += neuron.size
-        print "on pop spike count:", neuron.size
+        print idx, "-", id2, "on pop spike count:", neuron.size
 off_filter_pop_spikes = 0
-for pop in off_filter_populations_data:
+for idx, pop in enumerate(off_filter_populations_data):
     spikes = pop.segments[0].spiketrains
-    for neuron in spikes:
+    for id2, neuron in enumerate(spikes):
         off_filter_pop_spikes += neuron.size
-        print "off pop spike count:", neuron.size
+        print idx, "-", id2, "off pop spike count:", neuron.size
 object_spikes = 0
-for pop in object_data:
+for idx, pop in enumerate(object_data):
     spikes = pop.segments[0].spiketrains
-    for neuron in spikes:
+    for id2, neuron in enumerate(spikes):
         object_spikes += neuron.size
-        print "proto-object spike count:", neuron.size
+        print idx, "-", id2, "proto-object spike count:", neuron.size
 print "total spikes for {}:\n" \
       "on seg: {}\n" \
       "off seg: {}\n" \
