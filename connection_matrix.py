@@ -236,8 +236,8 @@ list_of_filter_sizes = [
     # [100, 100],
     # [15, 15],
     # [10, 10],
-    [20, 20],
-    [46, 46]
+    # [20, 20],
+    # [46, 46]
 ]
 filter_split = 4
 overlap = 0.6
@@ -338,60 +338,60 @@ p.run(15*1000)
 print "saving"
 on_filter_segments_data = []
 for data in on_filter_segments:
-    on_filter_segments_data.append(data.get_data())
+    on_filter_segments_data.append([data.get_data(), data.label])
 np.save('on filter segments data {}.npy'.format(label), on_filter_segments_data)
 
 off_filter_segments_data = []
 for data in off_filter_segments:
-    off_filter_segments_data.append(data.get_data())
+    off_filter_segments_data.append([data.get_data(), data.label])
 np.save('off filter segments data {}.npy'.format(label), off_filter_segments_data)
 
 on_filter_populations_data = []
 for data in on_filter_populations:
-    on_filter_populations_data.append(data.get_data())
+    on_filter_populations_data.append([data.get_data(), data.label])
 np.save('on filter population data {}.npy'.format(label), on_filter_populations_data)
 
 off_filter_populations_data = []
 for data in off_filter_populations:
-    off_filter_populations_data.append(data.get_data())
+    off_filter_populations_data.append([data.get_data(), data.label])
 np.save('off filter population data {}.npy'.format(label), off_filter_populations_data)
 
 object_data = []
 for object in proto_object_pop:
-    object_data.append(object.get_data())
+    object_data.append([object.get_data(), object.label])
 np.save('proto object data {}.npy'.format(label), object_data)
 print "all saved"
 
 on_filter_segments_spikes = 0
 for idx, pop in enumerate(on_filter_segments_data):
-    spikes = pop.segments[0].spiketrains
+    spikes = pop[0].segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         on_filter_segments_spikes += neuron.size
-        print idx, "-", id2, "on segment spike count:", neuron.size
+        print pop[1], ":", idx, "-", id2, "on segment spike count:", neuron.size
 off_filter_segments_spikes = 0
 for idx, pop in enumerate(off_filter_segments_data):
-    spikes = pop.segments[0].spiketrains
+    spikes = pop[0].segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         off_filter_segments_spikes += neuron.size
-        print idx, "-", id2, "off segment spike count:", neuron.size
+        print pop[1], ":", idx, "-", id2, "off segment spike count:", neuron.size
 on_filter_pop_spikes = 0
 for idx, pop in enumerate(on_filter_populations_data):
-    spikes = pop.segments[0].spiketrains
+    spikes = pop[0].segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         on_filter_pop_spikes += neuron.size
-        print idx, "-", id2, "on pop spike count:", neuron.size
+        print pop[1], ":", idx, "-", id2, "on pop spike count:", neuron.size
 off_filter_pop_spikes = 0
 for idx, pop in enumerate(off_filter_populations_data):
-    spikes = pop.segments[0].spiketrains
+    spikes = pop[0].segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         off_filter_pop_spikes += neuron.size
-        print idx, "-", id2, "off pop spike count:", neuron.size
+        print pop[1], ":", idx, "-", id2, "off pop spike count:", neuron.size
 object_spikes = 0
 for idx, pop in enumerate(object_data):
-    spikes = pop.segments[0].spiketrains
+    spikes = pop[0].segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         object_spikes += neuron.size
-        print idx, "-", id2, "proto-object spike count:", neuron.size
+        print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
 print "total spikes for {}:\n" \
       "on seg: {}\n" \
       "off seg: {}\n" \
