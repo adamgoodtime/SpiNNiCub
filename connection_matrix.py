@@ -231,12 +231,12 @@ neuron_params = {
 }
 # connection configurations:
 list_of_filter_sizes = [
-    # [46, 46],
+    [46, 46],
     [70, 70],
-    # [100, 100],
+    [100, 100],
     # [15, 15],
     # [10, 10],
-    # [20, 20],
+    [30, 30],
     # [46, 46]
 ]
 filter_split = 4
