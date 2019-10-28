@@ -38,7 +38,7 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
     x = (x*15) + (0.8*r) * np.cos(theta)
     y = (y*15) - (0.8*r) * np.sin(theta)
     # slit the value for the filter
-    angle = zero_2pi_tan(x, y, theta)
+    angle = zero_2pi_tan(x, y)
     if (angle >= np.pi - theta and angle <= (2*np.pi) - theta):
         split = -1
     else:
