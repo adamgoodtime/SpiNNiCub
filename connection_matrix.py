@@ -339,33 +339,21 @@ print "saving"
 on_filter_segments_data = []
 for data in on_filter_segments:
     on_filter_segments_data.append(data.get_data())
-    spikes = on_filter_segments_data[-1].segments[0].spiketrains
-    for neuron in spikes:
-        print "on segment spike count:", neuron.size
 np.save('on filter segments data {}.npy'.format(label), on_filter_segments_data)
 
 off_filter_segments_data = []
 for data in off_filter_segments:
     off_filter_segments_data.append(data.get_data())
-    spikes = off_filter_segments_data[-1].segments[0].spiketrains
-    for neuron in spikes:
-        print "off segment spike count:", neuron.size
 np.save('off filter segments data {}.npy'.format(label), off_filter_segments_data)
 
 on_filter_populations_data = []
 for data in on_filter_populations:
     on_filter_populations_data.append(data.get_data())
-    spikes = on_filter_populations_data[-1].segments[0].spiketrains
-    for neuron in spikes:
-        print "on pop spike count:", neuron.size
 np.save('on filter population data {}.npy'.format(label), on_filter_populations_data)
 
 off_filter_populations_data = []
 for data in off_filter_populations:
     off_filter_populations_data.append(data.get_data())
-    spikes = off_filter_populations_data[-1].segments[0].spiketrains
-    for neuron in spikes:
-        print "off pop spike count:", neuron.size
 np.save('off filter population data {}.npy'.format(label), off_filter_populations_data)
 
 object_data = []
@@ -373,6 +361,43 @@ for object in proto_object_pop:
     object_data.append(object.get_data())
 np.save('proto object data {}.npy'.format(label), object_data)
 print "all saved"
+
+on_filter_segments_spikes = 0
+for pop in on_filter_segments_data:
+    spikes = pop.segments[0].spiketrains
+    for neuron in spikes:
+        on_filter_segments_spikes += neuron.size
+        print "on segment spike count:", neuron.size
+off_filter_segments_spikes = 0
+for pop in off_filter_segments_data:
+    spikes = pop.segments[0].spiketrains
+    for neuron in spikes:
+        off_filter_segments_spikes += neuron.size
+        print "off segment spike count:", neuron.size
+on_filter_pop_spikes = 0
+for pop in on_filter_populations_data:
+    spikes = pop.segments[0].spiketrains
+    for neuron in spikes:
+        on_filter_pop_spikes += neuron.size
+        print "on pop spike count:", neuron.size
+off_filter_pop_spikes = 0
+for pop in off_filter_populations_data:
+    spikes = pop.segments[0].spiketrains
+    for neuron in spikes:
+        off_filter_pop_spikes += neuron.size
+        print "off pop spike count:", neuron.size
+object_spikes = 0
+for pop in object_data:
+    spikes = pop.segments[0].spiketrains
+    for neuron in spikes:
+        object_spikes += neuron.size
+        print "proto-object spike count:", neuron.size
+print "total spikes for {}:\n" \
+      "on seg: {}\n" \
+      "off seg: {}\n" \
+      "on filter: {}\n" \
+      "off filter: {}\n" \
+      "objects: {}".format(label, on_filter_segments_spikes, off_filter_segments_spikes, on_filter_pop_spikes, off_filter_pop_spikes, object_spikes)
 
 # pop_rec_data = pop_rec.get_data('spikes')
 # pop_out_data = pop_out.get_data()
