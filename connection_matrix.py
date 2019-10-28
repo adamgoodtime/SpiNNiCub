@@ -243,8 +243,9 @@ filter_split = 4
 overlap = 0.6
 base_weight = 5
 percentage_fire_threshold = 0.8
+inhib = [False, False] #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "fs-{} ol-{} w-{} pft-{}".format(filter_split, overlap, base_weight, percentage_fire_threshold)
+label = "fs-{} ol-{} w-{} pft-{} -ve{}".format(filter_split, overlap, base_weight, percentage_fire_threshold, inhib)
 
 # extract input data
 # dm = DataManager()
@@ -310,23 +311,41 @@ for filter in list_of_filter_sizes:
     # mutually inhibit everything? #
     ################################
     # opposite inhibition for filter segments
-    # for rotation in range(4):
-    #     p.Projection(on_filter_populations[rotation], on_filter_populations[rotation+4],
-    #                  p.OneToOneConnector(),
-    #                  p.StaticSynapse(weight=base_weight, delay=1),
-    #                  receptor_type='inhibitory')
-    #     p.Projection(on_filter_populations[rotation+4], on_filter_populations[rotation],
-    #                  p.OneToOneConnector(),
-    #                  p.StaticSynapse(weight=base_weight, delay=1),
-    #                  receptor_type='inhibitory')
-    #     p.Projection(off_filter_populations[rotation], off_filter_populations[rotation+4],
-    #                  p.OneToOneConnector(),
-    #                  p.StaticSynapse(weight=base_weight, delay=1),
-    #                  receptor_type='inhibitory')
-    #     p.Projection(off_filter_populations[rotation+4], off_filter_populations[rotation],
-    #                  p.OneToOneConnector(),
-    #                  p.StaticSynapse(weight=base_weight, delay=1),
-    #                  receptor_type='inhibitory')
+    for rotation in range(4):
+        if inhib[0]:
+            p.Projection(on_filter_populations[rotation], on_filter_populations[rotation+4],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(on_filter_populations[rotation+4], on_filter_populations[rotation],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(off_filter_populations[rotation], off_filter_populations[rotation+4],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(off_filter_populations[rotation+4], off_filter_populations[rotation],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+        if inhib[1]:
+            p.Projection(on_filter_populations[rotation], off_filter_populations[rotation+4],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(off_filter_populations[rotation+4], on_filter_populations[rotation],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(off_filter_populations[rotation], on_filter_populations[rotation+4],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
+            p.Projection(on_filter_populations[rotation+4], off_filter_populations[rotation],
+                         p.OneToOneConnector(),
+                         p.StaticSynapse(weight=base_weight, delay=1),
+                         receptor_type='inhibitory')
     first_layer_populations[0].append(off_filter_populations)
     first_layer_populations[1].append(on_filter_populations)
 
