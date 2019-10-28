@@ -215,7 +215,7 @@ def parse_ATIS(file_location, file_name):
         else:
             time = float(line[0]) * 1000.
             # print time
-        if line[4]:
+        if int(line[4]):
             on_events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
         else:
             off_events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
