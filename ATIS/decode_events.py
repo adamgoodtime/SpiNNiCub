@@ -155,5 +155,5 @@ if __name__ == '__main__':
 
     
     dm = DataManager()
-    dm.load_AE_from_yarp('data_surprise')
+    dm.load_AE_from_yarp('data')
 

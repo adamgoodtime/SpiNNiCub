@@ -232,15 +232,19 @@ neuron_params = {
 # connection configurations:
 list_of_filter_sizes = [
     # [46, 46],
-    # [70, 70],
+    [70, 70],
     # [100, 100],
-    [15, 15],
-    [10, 10],
-    [20, 20]]
+    # [15, 15],
+    # [10, 10],
+    [20, 20],
+    [46, 46]
+]
 filter_split = 4
 overlap = 0.6
 base_weight = 5
 percentage_fire_threshold = 0.8
+
+label = "fs-{} ol-{} w-{} pft-{}".format(filter_split, overlap, base_weight, percentage_fire_threshold)
 
 # extract input data
 # dm = DataManager()
@@ -338,7 +342,7 @@ for data in on_filter_segments:
     spikes = on_filter_segments_data[-1].segments[0].spiketrains
     for neuron in spikes:
         print "on segment spike count:", neuron.size
-np.save('on filter segments data.npy', on_filter_segments_data)
+np.save('on filter segments data {}.npy'.format(label), on_filter_segments_data)
 
 off_filter_segments_data = []
 for data in off_filter_segments:
@@ -346,7 +350,7 @@ for data in off_filter_segments:
     spikes = off_filter_segments_data[-1].segments[0].spiketrains
     for neuron in spikes:
         print "off segment spike count:", neuron.size
-np.save('off filter segments data.npy', off_filter_segments_data)
+np.save('off filter segments data {}.npy'.format(label), off_filter_segments_data)
 
 on_filter_populations_data = []
 for data in on_filter_populations:
@@ -354,7 +358,7 @@ for data in on_filter_populations:
     spikes = on_filter_populations_data[-1].segments[0].spiketrains
     for neuron in spikes:
         print "on pop spike count:", neuron.size
-np.save('on filter population data.npy', on_filter_populations_data)
+np.save('on filter population data {}.npy'.format(label), on_filter_populations_data)
 
 off_filter_populations_data = []
 for data in off_filter_populations:
@@ -362,12 +366,12 @@ for data in off_filter_populations:
     spikes = off_filter_populations_data[-1].segments[0].spiketrains
     for neuron in spikes:
         print "off pop spike count:", neuron.size
-np.save('off filter population data.npy', off_filter_populations_data)
+np.save('off filter population data {}.npy'.format(label), off_filter_populations_data)
 
 object_data = []
 for object in proto_object_pop:
     object_data.append(object.get_data())
-np.save('proto object data.npy', object_data)
+np.save('proto object data {}.npy'.format(label), object_data)
 print "all saved"
 
 # pop_rec_data = pop_rec.get_data('spikes')
