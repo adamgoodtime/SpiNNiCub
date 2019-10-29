@@ -151,7 +151,7 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
 
     # scale weights
     for connection in range(len(pixel_mapping)):
-        pixel_mapping[connection][2] /= float(block_count[pixel_mapping[connection][0]]) * percentage_fire_threshold
+        pixel_mapping[connection][2] /= float(block_count[pixel_mapping[connection][1]]) * percentage_fire_threshold
 
     if plot:
         fig = plt.figure()
@@ -312,8 +312,8 @@ def parse_ATIS(file_location, file_name):
 
 x_res = 304
 y_res = 240
-fovea_x = 304
-fovea_y = 240
+fovea_x = 200
+fovea_y = 200
 peripheral_x = (x_res - fovea_x) / 2
 peripheral_y = (y_res - fovea_y) / 2
 horizontal_split = 1
