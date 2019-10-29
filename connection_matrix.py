@@ -97,16 +97,16 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
                     if j < peripheral_y:
                         id = 0
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                     elif j >= y_res - peripheral_y:
                         id = max_blocks - horizontal_split - 2
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                     else:
                         block = float(j - peripheral_y) / (float(fovea_y) / float(veritcal_split))
                         id = 2 + horizontal_split + (2 * int(block))
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                 # top side
                 if j < peripheral_y:
                     if i < peripheral_x:
@@ -114,12 +114,12 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
                     elif i >= x_res - peripheral_x:
                         id = 1 + horizontal_split
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                     else:
                         block = float(i - peripheral_x) / (float(fovea_x) / float(horizontal_split))
                         id = 1 + int(block)
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                 # right side
                 if i >= x_res - peripheral_x:
                     if j < peripheral_y:
@@ -127,12 +127,12 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
                     elif j >= y_res - peripheral_y:
                         id = max_blocks - 1
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                     else:
                         block = float(j - peripheral_y) / (float(fovea_y) / float(veritcal_split))
                         id = 2 + horizontal_split + (2 * int(block)) + 1
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                 # bottom side
                 if j >= y_res - peripheral_y:
                     if i < peripheral_x:
@@ -143,7 +143,7 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
                         block = float(i - peripheral_x) / (float(fovea_x) / float(horizontal_split))
                         id = max_blocks - 1 - (horizontal_split - int(block))
                         block_count[id] += 1
-                        pixel_mapping.append([id, convert_pixel_to_id(i, j), base_weight, 1])
+                        pixel_mapping.append([convert_pixel_to_id(i, j), id, base_weight, 1])
                 z.append(id)
         xs.append(x)
         ys.append(y)
