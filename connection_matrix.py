@@ -363,6 +363,11 @@ p.Projection(on_population, boarder_population, p.FromListConnector(boarder_conn
 p.Projection(off_population, boarder_population, p.FromListConnector(boarder_connections))
 
 # create filters and connections from input video stream
+all_on_filter_segments = []
+all_off_filter_segments = []
+all_on_filter_populations = []
+all_off_filter_populations = []
+all_proto_object_pops = []
 for filter in list_of_filter_sizes:
     print "SpiNN setup for filter", filter
     # for each rotation, 0 -> 7pi/4
@@ -411,7 +416,11 @@ for filter in list_of_filter_sizes:
     print "total number of neurons in segments = ", no_neurons * 2 * 8
     print "total number of neurons in filters = ", (no_neurons / filter_split) * 2 * 8
     # create proto object
-    proto_object_pop = proto_objects(on_filter_populations, off_filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale)
+    all_proto_object_pops.append(proto_objects(on_filter_populations, off_filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
+    all_on_filter_segments.append(on_filter_segments)
+    all_off_filter_segments.append(off_filter_segments)
+    all_on_filter_populations.append(on_filter_populations)
+    all_off_filter_populations.append(off_filter_populations)
     ################################
     # mutually inhibit everything? #
     ################################
@@ -452,83 +461,112 @@ for filter in list_of_filter_sizes:
                          p.StaticSynapse(weight=base_weight, delay=1),
                          receptor_type='inhibitory')
 
-print "number of neurons in proto-objects = ", len(proto_object_pop)
-for object in proto_object_pop:
-    object.record('all')
+
+for idx, proto_object_pop in enumerate(all_proto_object_pops):
+    print "number of neurons in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
+    for object in proto_object_pop:
+        object.record('all')
 p.run(15*1000)
 
 print "saving"
 boarder_data = boarder_population.get_data()
 np.save('board pop data {}.npy'.format(label), boarder_data)
 
-on_filter_segments_data = []
-for data in on_filter_segments:
-    on_filter_segments_data.append([data.get_data(), data.label])
-np.save('on filter segments data {}.npy'.format(label), on_filter_segments_data)
+all_on_filter_segments_data = []
+for filter_size, filter_data in enumerate(all_on_filter_segments):
+    on_filter_segments_data = []
+    for data in filter_data:
+        on_filter_segments_data.append([data.get_data(), data.label])
+    all_on_filter_segments_data.append(on_filter_segments_data)
+    np.save('on filter segments data {}-{}.npy'.format(filter_sizes[filter_size], label), on_filter_segments_data)
 
-off_filter_segments_data = []
-for data in off_filter_segments:
-    off_filter_segments_data.append([data.get_data(), data.label])
-np.save('off filter segments data {}.npy'.format(label), off_filter_segments_data)
+all_off_filter_segments_data = []
+for filter_size, filter_data in enumerate(all_off_filter_segments):
+    off_filter_segments_data = []
+    for data in filter_data:
+        off_filter_segments_data.append([data.get_data(), data.label])
+    all_off_filter_segments_data.append(off_filter_segments_data)
+    np.save('off filter segments data {}-{}.npy'.format(filter_sizes[filter_size], label), off_filter_segments_data)
 
-on_filter_populations_data = []
-for data in on_filter_populations:
-    on_filter_populations_data.append([data.get_data(), data.label])
-np.save('on filter population data {}.npy'.format(label), on_filter_populations_data)
+all_on_filter_populations_data = []
+for filter_size, filter_data in enumerate(all_on_filter_populations):
+    on_filter_populations_data = []
+    for data in filter_data:
+        on_filter_populations_data.append([data.get_data(), data.label])
+    all_on_filter_populations_data.append(on_filter_populations_data)
+    np.save('on filter pop data {}-{}.npy'.format(filter_sizes[filter_size], label), on_filter_populations_data)
 
-off_filter_populations_data = []
-for data in off_filter_populations:
-    off_filter_populations_data.append([data.get_data(), data.label])
-np.save('off filter population data {}.npy'.format(label), off_filter_populations_data)
+all_off_filter_populations_data = []
+for filter_size, filter_data in enumerate(all_off_filter_populations):
+    off_filter_populations_data = []
+    for data in filter_data:
+        off_filter_populations_data.append([data.get_data(), data.label])
+    all_off_filter_populations_data.append(off_filter_populations_data)
+    np.save('off filter pop data {}-{}.npy'.format(filter_sizes[filter_size], label), off_filter_populations_data)
 
-object_data = []
-for object in proto_object_pop:
-    object_data.append([object.get_data(), object.label])
-np.save('proto object data {}.npy'.format(label), object_data)
+all_proto_object_data = []
+for filter_size, proto_pop in enumerate(all_proto_object_pops):
+    object_data = []
+    for object in proto_pop:
+        object_data.append([object.get_data(), object.label])
+    np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
 print "all saved"
 
-on_filter_segments_spikes = 0
-for idx, pop in enumerate(on_filter_segments_data):
-    spikes = pop[0].segments[0].spiketrains
-    for id2, neuron in enumerate(spikes):
-        on_filter_segments_spikes += neuron.size
-        print pop[1], ":", idx, "-", id2, "on segment spike count:", neuron.size
-off_filter_segments_spikes = 0
-for idx, pop in enumerate(off_filter_segments_data):
-    spikes = pop[0].segments[0].spiketrains
-    for id2, neuron in enumerate(spikes):
-        off_filter_segments_spikes += neuron.size
-        print pop[1], ":", idx, "-", id2, "off segment spike count:", neuron.size
-on_filter_pop_spikes = 0
-for idx, pop in enumerate(on_filter_populations_data):
-    spikes = pop[0].segments[0].spiketrains
-    for id2, neuron in enumerate(spikes):
-        on_filter_pop_spikes += neuron.size
-        print pop[1], ":", idx, "-", id2, "on pop spike count:", neuron.size
-off_filter_pop_spikes = 0
-for idx, pop in enumerate(off_filter_populations_data):
-    spikes = pop[0].segments[0].spiketrains
-    for id2, neuron in enumerate(spikes):
-        off_filter_pop_spikes += neuron.size
-        print pop[1], ":", idx, "-", id2, "off pop spike count:", neuron.size
-object_spikes = 0
-for idx, pop in enumerate(object_data):
-    spikes = pop[0].segments[0].spiketrains
-    for id2, neuron in enumerate(spikes):
-        object_spikes += neuron.size
-        print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+on_filter_segments_spikes = [0 for i in range(len(filter_sizes))]
+for filter_idx, on_filter_segments_data in enumerate(all_on_filter_segments_data):
+    for idx, pop in enumerate(on_filter_segments_data):
+        spikes = pop[0].segments[0].spiketrains
+        for id2, neuron in enumerate(spikes):
+            on_filter_segments_spikes[filter_idx] += neuron.size
+            print pop[1], ":", idx, "-", id2, "on segment spike count:", neuron.size
+off_filter_segments_spikes = [0 for i in range(len(filter_sizes))]
+for filter_idx, off_filter_segments_data in enumerate(all_off_filter_segments_data):
+    for idx, pop in enumerate(off_filter_segments_data):
+        spikes = pop[0].segments[0].spiketrains
+        for id2, neuron in enumerate(spikes):
+            off_filter_segments_spikes[filter_idx] += neuron.size
+            print pop[1], ":", idx, "-", id2, "off segment spike count:", neuron.size
+on_filter_pop_spikes = [0 for i in range(len(filter_sizes))]
+for filter_idx, on_filter_populations_data in enumerate(all_on_filter_populations_data):
+    for idx, pop in enumerate(on_filter_populations_data):
+        spikes = pop[0].segments[0].spiketrains
+        for id2, neuron in enumerate(spikes):
+            on_filter_pop_spikes[filter_idx] += neuron.size
+            print pop[1], ":", idx, "-", id2, "on pop spike count:", neuron.size
+off_filter_pop_spikes = [0 for i in range(len(filter_sizes))]
+for filter_idx, off_filter_populations_data in enumerate(all_off_filter_populations_data):
+    for idx, pop in enumerate(off_filter_populations_data):
+        spikes = pop[0].segments[0].spiketrains
+        for id2, neuron in enumerate(spikes):
+            off_filter_pop_spikes[filter_idx] += neuron.size
+            print pop[1], ":", idx, "-", id2, "off pop spike count:", neuron.size
+object_spikes = [0 for i in range(len(filter_sizes))]
+for filter_idx, object_data in enumerate(all_proto_object_data):
+    for idx, pop in enumerate(object_data):
+        spikes = pop[0].segments[0].spiketrains
+        for id2, neuron in enumerate(spikes):
+            object_spikes[filter_idx] += neuron.size
+            print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+
 boarder_spikes = 0
 spikes = boarder_data.segments[0].spiketrains
 for id2, neuron in enumerate(spikes):
     boarder_spikes += neuron.size
     print id2, "boarder spike count:", neuron.size
-print "total spikes for {}:\n" \
-      "on seg: {}\n" \
-      "off seg: {}\n" \
-      "on filter: {}\n" \
-      "off filter: {}\n" \
-      "objects: {}\n" \
-      "boarder: {}".format(label, on_filter_segments_spikes, off_filter_segments_spikes, on_filter_pop_spikes, off_filter_pop_spikes, object_spikes, boarder_spikes)
+print "total boarder spikes:", boarder_spikes
+for idx, filter_size in enumerate(filter_sizes):
+    print "total spikes for {}:\n" \
+          "filter size: {}" \
+          "on seg: {}\n" \
+          "off seg: {}\n" \
+          "on filter: {}\n" \
+          "off filter: {}\n" \
+          "objects: {}".format(label, filter_size,
+                               on_filter_segments_spikes[idx],
+                               off_filter_segments_spikes[idx],
+                               on_filter_pop_spikes[idx],
+                               off_filter_pop_spikes[idx],
+                               object_spikes[idx])
 
 # pop_rec_data = pop_rec.get_data('spikes')
 # pop_out_data = pop_out.get_data()
