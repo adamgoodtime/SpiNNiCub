@@ -253,43 +253,43 @@ def proto_objects(on_populations, off_populations, filter_width, filter_height, 
             if j + 1 < max_filters_y:
                 n2 = (i) + ((j+1) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-up'.format(i, j+1)))
-                p.Projection(on_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
-                p.Projection(off_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
+                                                         label='{}-{}-{}-up'.format(filter_width, i, j+1)))
+                p.Projection(on_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
+                p.Projection(off_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-down'.format(i, j+1)))
-                p.Projection(on_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
-                p.Projection(off_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
+                                                         label='{}-{}-{}-down'.format(filter_width, i, j+1)))
+                p.Projection(on_populations[2], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
+                p.Projection(off_populations[6], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 if i - 1 >= 0:
                     n2 = (i-1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-upl'.format(i, j+1)))
-                    p.Projection(on_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
-                    p.Projection(off_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
+                                                             label='{}-{}-{}-upl'.format(filter_width, i, j+1)))
+                    p.Projection(on_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
+                    p.Projection(off_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-downr'.format(i, j+1)))
-                    p.Projection(on_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
-                    p.Projection(off_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
+                                                             label='{}-{}-{}-downr'.format(filter_width, i, j+1)))
+                    p.Projection(on_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
+                    p.Projection(off_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
             if i + 1 < max_filters_x:
                 n2 = (i+1) + ((j) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-l'.format(i, j+1)))
-                p.Projection(on_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
-                p.Projection(off_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
+                                                         label='{}-{}-{}-l'.format(filter_width, i, j+1)))
+                p.Projection(on_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
+                p.Projection(off_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-r'.format(i, j+1)))
-                p.Projection(on_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
-                p.Projection(off_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
+                                                         label='{}-{}-{}-r'.format(filter_width, i, j+1)))
+                p.Projection(on_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
+                p.Projection(off_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 if j + 1 < max_filters_y:
                     n2 = (i+1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-upr'.format(i, j+1)))
-                    p.Projection(on_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
-                    p.Projection(off_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
+                                                             label='{}-{}-{}-upr'.format(filter_width, i, j+1)))
+                    p.Projection(on_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
+                    p.Projection(off_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-downl'.format(i, j+1)))
-                    p.Projection(on_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 1, base_weight*weight_scale, 1]]))
-                    p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 1, base_weight*weight_scale, 1]]))
+                                                             label='{}-{}-{}-downl'.format(filter_width, i, j+1)))
+                    p.Projection(on_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
+                    p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
     return proto_object_neurons
 
 def parse_ATIS(file_location, file_name):
@@ -312,8 +312,8 @@ def parse_ATIS(file_location, file_name):
 
 x_res = 304
 y_res = 240
-fovea_x = 200
-fovea_y = 200
+fovea_x = 300
+fovea_y = 236
 peripheral_x = (x_res - fovea_x) / 2
 peripheral_y = (y_res - fovea_y) / 2
 horizontal_split = 1
@@ -323,28 +323,32 @@ neuron_params = {
     # balance the refractory period/tau_mem so membrane has lost contribution before next spike
 }
 # connection configurations:
-list_of_filter_sizes = [
-    [46, 46],
-    [70, 70],
-    [100, 100],
-    # [10, 10],
-    # [15, 15],
-    # [20, 20],
-    # [46, 46]
-]
+filter_sizes = [30, 46, 70, 100]
+list_of_filter_sizes = []
+for filter_size in filter_sizes:
+    list_of_filter_sizes.append([filter_size, filter_size])
+# list_of_filter_sizes = [
+#     [46, 46],
+#     [70, 70],
+#     [100, 100],
+#     # [10, 10],
+#     # [15, 15],
+#     # [20, 20],
+#     # [30, 30]
+# ]
 filter_split = 4
 overlap = 0.6
 base_weight = 5.
-percentage_fire_threshold = 0.8
+percentage_fire_threshold = 0.2
 proto_scale = 0.75
 inhib = [False, False] #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "fs-{} ol-{} w-{} pft-{} ps-{} -ve{}".format(filter_split, overlap, base_weight, percentage_fire_threshold, proto_scale, inhib)
+label = "fs-{} ol-{} w-{} pft-{} ps-{} -ve{} {}".format(filter_split, overlap, base_weight, percentage_fire_threshold, proto_scale, inhib, filter_sizes)
 
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
-on_events, off_events = parse_ATIS('ATIS/data', 'decoded_events.txt')
+on_events, off_events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
 p.setup(timestep=1.0)
 on_population = p.Population(x_res*y_res, p.SpikeSourceArray(on_events), label='on_events')
 off_population = p.Population(x_res*y_res, p.SpikeSourceArray(off_events), label='off_events')
@@ -451,7 +455,7 @@ for filter in list_of_filter_sizes:
 print "number of neurons in proto-objects = ", len(proto_object_pop)
 for object in proto_object_pop:
     object.record('all')
-p.run(3*1000)
+p.run(15*1000)
 
 print "saving"
 boarder_data = boarder_population.get_data()
