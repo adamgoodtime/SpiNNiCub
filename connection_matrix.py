@@ -509,6 +509,7 @@ for filter_size, proto_pop in enumerate(all_proto_object_pops):
     object_data = []
     for object in proto_pop:
         object_data.append([object.get_data(), object.label])
+    all_proto_object_data.append(object_data)
     np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
 print "all saved"
 
@@ -556,7 +557,7 @@ for id2, neuron in enumerate(spikes):
 print "total boarder spikes:", boarder_spikes
 for idx, filter_size in enumerate(filter_sizes):
     print "total spikes for {}:\n" \
-          "filter size: {}" \
+          "filter size: {}\n" \
           "on seg: {}\n" \
           "off seg: {}\n" \
           "on filter: {}\n" \
