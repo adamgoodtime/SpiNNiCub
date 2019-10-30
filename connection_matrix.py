@@ -243,8 +243,8 @@ def create_filter_neuron_connections(filter_split, no_neurons, base_weight):
     return connections
 
 def proto_objects(on_populations, off_populations, filter_width, filter_height, base_weight, weight_scale=0.5):
-    max_filters_x = int(x_res / (filter_width * (1-overlap)))
-    max_filters_y = int(y_res / (filter_height * (1-overlap)))
+    max_filters_x = int((x_res - peripheral_x*2) / (filter_width * (1-overlap)))
+    max_filters_y = int((y_res - peripheral_y*2) / (filter_height * (1-overlap)))
     proto_object_neurons = []
     # create the connections and populations
     for i in range(max_filters_x):
@@ -263,31 +263,31 @@ def proto_objects(on_populations, off_populations, filter_width, filter_height, 
                 if i - 1 >= 0:
                     n2 = (i-1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-upl'.format(filter_width, i, j+1)))
+                                                             label='{}-{}-{}-upl'.format(filter_width, i-1, j+1)))
                     p.Projection(on_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                     p.Projection(off_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-downr'.format(filter_width, i, j+1)))
+                                                             label='{}-{}-{}-downr'.format(filter_width, i-1, j+1)))
                     p.Projection(on_populations[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     p.Projection(off_populations[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
             if i + 1 < max_filters_x:
                 n2 = (i+1) + ((j) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-l'.format(filter_width, i, j+1)))
+                                                         label='{}-{}-{}-l'.format(filter_width, i+1, j)))
                 p.Projection(on_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 p.Projection(off_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-r'.format(filter_width, i, j+1)))
+                                                         label='{}-{}-{}-r'.format(filter_width, i+1, j)))
                 p.Projection(on_populations[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                 p.Projection(off_populations[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 if j + 1 < max_filters_y:
                     n2 = (i+1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-upr'.format(filter_width, i, j+1)))
+                                                             label='{}-{}-{}-upr'.format(filter_width, i+1, j+1)))
                     p.Projection(on_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                     p.Projection(off_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-downl'.format(filter_width, i, j+1)))
+                                                             label='{}-{}-{}-downl'.format(filter_width, i+1, j+1)))
                     p.Projection(on_populations[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
                     p.Projection(off_populations[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
     return proto_object_neurons
