@@ -36,35 +36,41 @@ def convert_filter_xy_to_proto_centre(filter_x, filter_y, filter_width, filter_h
     #         break
 
     x = filter_x * (filter_width - (overlap * filter_width))
-    x += filter_width / 2
+    x += (filter_width / 2) + peripheral_x
     y = filter_y * (filter_height - (overlap * filter_height))
-    y += filter_height / 2
+    y += (filter_height / 2) + peripheral_y
 
     return x, y
 
 x_res = 304
 y_res = 240
-fovea_x = 304
-fovea_y = 240
+fovea_x = 300
+fovea_y = 236
 peripheral_x = (x_res - fovea_x) / 2
 peripheral_y = (y_res - fovea_y) / 2
 horizontal_split = 1
 veritcal_split = 1
 
 # connection configurations:
-filter_sizes = [30, 46, 70, 100]
+filter_sizes = [100, 70, 46, 30]
 list_of_filter_sizes = []
 for filter_size in filter_sizes:
     list_of_filter_sizes.append([filter_size, filter_size])
-
 filter_split = 4
 overlap = 0.6
 base_weight = 5.
-percentage_fire_threshold = 0.2
-proto_scale = 4.5
-inhib = [False, False] #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+boarder_percentage_fire_threshold = 0.2
+segment_percentage_fire_threshold = 0.2
+filter_percentage_fire_threshold = 0.9
+inhib_percentage_fire_threshold = 1.
+proto_scale = 0.75
+inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "fs-{} ol-{} w-{} pft-{} ps-{} -ve{} {}".format(filter_split, overlap, base_weight, percentage_fire_threshold, proto_scale, inhib, filter_sizes)
+label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ps-{} -ve{} {}".format(filter_split, overlap, base_weight,
+                                                                      boarder_percentage_fire_threshold,
+                                                                      segment_percentage_fire_threshold,
+                                                                      filter_percentage_fire_threshold,
+                                                                      proto_scale, inhib, filter_sizes)
 
 file_location = "run_data"
 
