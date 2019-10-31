@@ -163,7 +163,8 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
 
 
 def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_split=4, rotation=0,
-                              base_weight=1., percentage_fire_threshold=0.5, inhib_percentage_fire_threshold=1., plot=False):
+                              base_weight=1., percentage_fire_threshold=0.5, inhib_percentage_fire_threshold=1.,
+                              inhib_connect_prob=1., plot=False):
     # create the filter which is to be copied in a grid like fashion around the visual field
     filter_split_matrix = []
     filter_matrix = []
@@ -221,10 +222,13 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
                     neuron_id = (corner[2] * filter_split) + (max_filters_x * corner[3] * filter_split) + split_value
                     exc_neuron_id_count[neuron_id] += 1
                     exc_connection_list.append([pixel_value, neuron_id, base_weight, 1])
-                elif inhib_percentage_fire_threshold and not filter_matrix[filter_x][filter_y]:
+                elif inhib_percentage_fire_threshold and \
+                        not filter_matrix[filter_x][filter_y] \
+                        and np.random.random() < inhib_connect_prob:
                     filter_id = corner[2] + (corner[3] * max_filters_x)
                     inh_synapse_count[filter_id] += 1
-                    inh_connection_list.append([pixel_value, filter_id, base_weight / (zero_count * inhib_percentage_fire_threshold), 1])
+                    inh_connection_list.append([pixel_value, filter_id,
+                                                base_weight / (zero_count * inhib_percentage_fire_threshold), 1])
             xs.append(x)
             ys.append(y)
             visual_matrix.append(visual_row)
@@ -261,44 +265,51 @@ def proto_objects(population_1, population_2, filter_width, filter_height, base_
             if j + 1 < max_filters_y:
                 n2 = (i) + ((j+1) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-up'.format(filter_width, i, j+1)))
+                                                         label='{}-{}-{}-ver'.format(filter_width, i, j)))
                 p.Projection(population_1[6], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 p.Projection(population_2[2], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-down'.format(filter_width, i, j+1)))
-                p.Projection(population_1[2], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                p.Projection(population_2[6], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 if i - 1 >= 0:
                     n2 = (i-1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-upl'.format(filter_width, i-1, j+1)))
+                                                             label='{}-{}-{}-upl'.format(filter_width, i, j)))
                     p.Projection(population_1[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                     p.Projection(population_2[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                    proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-downr'.format(filter_width, i-1, j+1)))
-                    p.Projection(population_1[1], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                    p.Projection(population_2[5], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
             if i + 1 < max_filters_x:
                 n2 = (i+1) + ((j) * max_filters_x)
                 proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-l'.format(filter_width, i+1, j)))
+                                                         label='{}-{}-{}-hor'.format(filter_width, i, j)))
                 p.Projection(population_1[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 p.Projection(population_2[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                         label='{}-{}-{}-r'.format(filter_width, i+1, j)))
-                p.Projection(population_1[4], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                p.Projection(population_2[0], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                 if j + 1 < max_filters_y:
                     n2 = (i+1) + ((j+1) * max_filters_x)
                     proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-upr'.format(filter_width, i+1, j+1)))
+                                                             label='{}-{}-{}-upr'.format(filter_width, i, j)))
                     p.Projection(population_1[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
                     p.Projection(population_2[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                    proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
-                                                             label='{}-{}-{}-downl'.format(filter_width, i+1, j+1)))
-                    p.Projection(population_1[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
-                    p.Projection(population_2[7], proto_object_neurons[-1], p.FromListConnector([[n2, 0, base_weight*weight_scale, 1]]))
     return proto_object_neurons
+
+def convert_filter_xy_to_proto_centre(split_data, overlap):
+    [filter_size, filter_x, filter_y, direction] = split_data
+    filter_width = filter_size
+    filter_height = filter_size
+    if direction == 'ver':
+        offset_x = 0
+        offset_y = (filter_height / 2) * (1-overlap)
+    elif direction == 'hor':
+        offset_x = (filter_width / 2) * (1-overlap)
+        offset_y = 0
+    elif direction == 'upl':
+        offset_x = -(filter_width / 2) * (1-overlap)
+        offset_y = (filter_height / 2) * (1-overlap)
+    elif direction == 'upr':
+        offset_x = (filter_width / 2) * (1-overlap)
+        offset_y = (filter_height / 2) * (1-overlap)
+    x = filter_x * (filter_width - (overlap * filter_width))
+    x += offset_x + peripheral_x
+    y = filter_y * (filter_height - (overlap * filter_height))
+    y += offset_y + peripheral_y
+
+    return x, y
 
 def parse_ATIS(file_location, file_name):
     f = open("{}/{}".format(file_location, file_name), "r")
@@ -326,7 +337,9 @@ veritcal_split = 1
 neuron_params = {
     # balance the refractory period/tau_mem so membrane has lost contribution before next spike
 }
-# connection configurations:
+##############################
+# connection configurations: #
+##############################
 # filter_sizes = [30, 46, 70, 100]
 filter_sizes = [100, 70, 46, 30]
 list_of_filter_sizes = []
@@ -339,6 +352,7 @@ boarder_percentage_fire_threshold = 0.2
 segment_percentage_fire_threshold = 0.2
 filter_percentage_fire_threshold = 0.8
 inhib_percentage_fire_threshold = 1.
+inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
@@ -381,6 +395,7 @@ for filter in list_of_filter_sizes:
                                                                                      base_weight=base_weight/float(filter_split),
                                                                                      percentage_fire_threshold=segment_percentage_fire_threshold,
                                                                                      inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
+                                                                                     inhib_connect_prob=inhib_connect_prob,
                                                                                      plot=False)
         # create neurons for each segment of filter
         filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
@@ -410,9 +425,6 @@ for filter in list_of_filter_sizes:
     all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
     all_filter_segments.append(filter_segments)
     all_filter_populations.append(filter_populations)
-    ################################
-    # mutually inhibit everything? #
-    ################################
     # opposite inhibition for filter segments
     if inhib:
         for rotation in range(4):
@@ -476,12 +488,32 @@ for filter_idx, filter_populations_data in enumerate(all_filter_populations_data
             filter_pop_spikes[filter_idx] += neuron.size
             print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
 object_spikes = [0 for i in range(len(filter_sizes))]
+coords_and_times = []
+all_spike_count = {}
 for filter_idx, object_data in enumerate(all_proto_object_data):
+    spike_count = {}
     for idx, pop in enumerate(object_data):
         spikes = pop[0].segments[0].spiketrains
         for id2, neuron in enumerate(spikes):
             object_spikes[filter_idx] += neuron.size
             print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+            split_data = pop[1].split('-')
+            spike_data = pop[0].segments[0].spiketrains
+            spikes = 0
+            for neuron in spike_data:
+                spikes += neuron.size
+            if spikes:
+                spike_times = spike_data[0].magnitude
+                x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+                if '({}, {})'.format(x, y) in spike_count:
+                    spike_count['({}, {})'.format(x, y)] += 1
+                else:
+                    spike_count['({}, {})'.format(x, y)] = 1
+                for spike_time in spike_times:
+                    coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
+    all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
+print all_spike_count
+np.save('all extracted proto spikes', coords_and_times)
 
 boarder_spikes = 0
 spikes = boarder_data.segments[0].spiketrains
