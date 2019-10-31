@@ -414,7 +414,7 @@ for filter in list_of_filter_sizes:
         filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                   label='filter {} - {}'.format(filter, rotation)))
         if len(inhib_connection) != 0:
-            p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection))
+            p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), synapse_type='inhibitory')
         p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
         filter_populations[-1].record('spikes')
         filter_segments[-1].record('spikes')
@@ -512,9 +512,9 @@ for filter_idx, object_data in enumerate(all_proto_object_data):
                 spike_times = spike_data[0].magnitude
                 x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
                 if '({}, {})'.format(x, y) in sanity_check:
-                    sanity_check['({}, {})'.format(x, y)] += 1
+                    sanity_check['({}, {})'.format(x, y)].append(split_data)
                 else:
-                    sanity_check['({}, {})'.format(x, y)] = 1
+                    sanity_check['({}, {})'.format(x, y)] = [split_data]
                 for spike_time in spike_times:
                     coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
                     if '({}, {})'.format(x, y) in spike_count:
