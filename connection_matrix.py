@@ -290,8 +290,8 @@ def proto_objects(population_1, population_2, filter_width, filter_height, base_
 
 def convert_filter_xy_to_proto_centre(split_data, overlap):
     [filter_size, filter_x, filter_y, direction] = split_data
-    filter_width = filter_size
-    filter_height = filter_size
+    filter_width = int(filter_size)
+    filter_height = int(filter_size)
     if direction == 'ver':
         offset_x = 0
         offset_y = (filter_height / 2) * (1-overlap)
@@ -304,6 +304,8 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
     elif direction == 'upr':
         offset_x = (filter_width / 2) * (1-overlap)
         offset_y = (filter_height / 2) * (1-overlap)
+    else:
+        Exception
     x = filter_x * (filter_width - (overlap * filter_width))
     x += offset_x + peripheral_x
     y = filter_y * (filter_height - (overlap * filter_height))
