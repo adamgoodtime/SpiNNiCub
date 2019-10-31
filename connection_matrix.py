@@ -496,10 +496,8 @@ for filter_idx, filter_populations_data in enumerate(all_filter_populations_data
 object_spikes = [0 for i in range(len(filter_sizes))]
 coords_and_times = []
 all_spike_count = {}
-all_sanity = {}
 for filter_idx, object_data in enumerate(all_proto_object_data):
     spike_count = {}
-    sanity_check = {}
     for idx, pop in enumerate(object_data):
         spikes = pop[0].segments[0].spiketrains
         for id2, neuron in enumerate(spikes):
@@ -513,10 +511,6 @@ for filter_idx, object_data in enumerate(all_proto_object_data):
             if spikes:
                 spike_times = spike_data[0].magnitude
                 x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
-                if '({}, {})'.format(x, y) in sanity_check:
-                    sanity_check['({}, {})'.format(x, y)].append(split_data)
-                else:
-                    sanity_check['({}, {})'.format(x, y)] = [split_data]
                 for spike_time in spike_times:
                     coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
                     if '({}, {})'.format(x, y) in spike_count:
@@ -524,11 +518,6 @@ for filter_idx, object_data in enumerate(all_proto_object_data):
                     else:
                         spike_count['({}, {})'.format(x, y)] = 1
     all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
-    all_sanity['{}'.format(filter_sizes[filter_idx])] = sanity_check
-for filter_size in all_sanity:
-    print "sanity filter size:", filter_size
-    for location in all_sanity[filter_size]:
-        print location, all_sanity[filter_size][location]
 for filter_size in all_spike_count:
     print "filter size:", filter_size
     for location in all_spike_count[filter_size]:
