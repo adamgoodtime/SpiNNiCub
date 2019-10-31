@@ -227,8 +227,7 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
                         and np.random.random() < inhib_connect_prob:
                     filter_id = corner[2] + (corner[3] * max_filters_x)
                     inh_synapse_count[filter_id] += 1
-                    inh_connection_list.append([pixel_value, filter_id,
-                                                base_weight / (zero_count * inhib_percentage_fire_threshold), 1])
+                    inh_connection_list.append([pixel_value, filter_id, base_weight, 1])
             xs.append(x)
             ys.append(y)
             visual_matrix.append(visual_row)
@@ -237,8 +236,8 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
     # scale weights
     for connection in range(len(exc_connection_list)):
         exc_connection_list[connection][2] /= exc_neuron_id_count[exc_connection_list[connection][1]] * percentage_fire_threshold
-    # for connection in range(len(inh_connection_list)):
-    #     inh_connection_list[connection][2] /= inh_synapse_count[inh_connection_list[connection][1]] * inhib_percentage_fire_threshold
+    for connection in range(len(inh_connection_list)):
+        inh_connection_list[connection][2] /= inh_synapse_count[inh_connection_list[connection][1]] * inhib_percentage_fire_threshold
 
     if plot:
         fig = plt.figure()
