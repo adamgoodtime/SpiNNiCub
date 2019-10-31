@@ -522,7 +522,7 @@ for filter_size in all_spike_count:
     print "filter size:", filter_size
     for location in all_spike_count[filter_size]:
         print location, all_spike_count[filter_size][location]
-np.save('all extracted proto spikes', coords_and_times)
+np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
 
 boarder_spikes = 0
 spikes = boarder_data.segments[0].spiketrains
