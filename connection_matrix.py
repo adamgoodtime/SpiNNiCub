@@ -360,11 +360,13 @@ inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ps-{} -ve{} {}".format(filter_split, overlap, base_weight,
-                                                                      boarder_percentage_fire_threshold,
-                                                                      segment_percentage_fire_threshold,
-                                                                      filter_percentage_fire_threshold,
-                                                                      proto_scale, inhib, filter_sizes)
+label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
+                                                                                    boarder_percentage_fire_threshold,
+                                                                                    segment_percentage_fire_threshold,
+                                                                                    filter_percentage_fire_threshold,
+                                                                                    inhib_percentage_fire_threshold,
+                                                                                    inhib_connect_prob,
+                                                                                    proto_scale, inhib, filter_sizes)
 
 # extract input data
 # dm = DataManager()
@@ -414,7 +416,7 @@ for filter in list_of_filter_sizes:
         filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                   label='filter {} - {}'.format(filter, rotation)))
         if len(inhib_connection) != 0:
-            p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), synapse_type='inhibitory')
+            p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
         p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
         filter_populations[-1].record('spikes')
         filter_segments[-1].record('spikes')
