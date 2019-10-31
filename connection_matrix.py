@@ -517,7 +517,10 @@ for filter_idx, object_data in enumerate(all_proto_object_data):
                 for spike_time in spike_times:
                     coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
     all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
-print all_spike_count
+for filter_size in all_spike_count:
+    print filter_size
+    for location in all_spike_count[filter_size]:
+        print all_spike_count[filter_size][location]
 np.save('all extracted proto spikes', coords_and_times)
 
 boarder_spikes = 0
