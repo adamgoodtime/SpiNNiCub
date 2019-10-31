@@ -414,7 +414,7 @@ for filter in list_of_filter_sizes:
                                                               percentage_fire_threshold=filter_percentage_fire_threshold)
         filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                   label='filter {} - {}'.format(filter, rotation)))
-        if inhib_percentage_fire_threshold:
+        if len(inhib_connection) != 0:
             p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection))
         p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
         filter_populations[-1].record('spikes')
