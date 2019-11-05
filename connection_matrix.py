@@ -9,6 +9,7 @@ import spynnaker8 as p
 from ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
+from generate_events import FakeStimuliBarMoving
 
 warnings.filterwarnings("error")
 
@@ -329,6 +330,27 @@ def parse_ATIS(file_location, file_name):
         events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
+def generate_fake_stimuli():
+    on, off = FakeStimuliBarMoving([x_res, y_res], 1., 40., [50, 50], 'LR', 'BlackOverWhite')
+    events = parse_event_class(on, off)
+    return events
+
+def parse_event_class(eventsON, eventsOFF):
+    events = [[] for i in range(x_res*y_res)]
+    for event in eventsON:
+        x = event.x
+        y = event.y
+        timestamp = event.timestamp
+        polarity = event.polarity
+        events[convert_pixel_to_id(x, y)].append(timestamp)
+    for event in eventsOFF:
+        x = event.x
+        y = event.y
+        timestamp = event.timestamp
+        polarity = event.polarity
+        events[convert_pixel_to_id(x, y)].append(timestamp)
+    return events
+
 x_res = 304
 y_res = 240
 fovea_x = 300
@@ -360,6 +382,8 @@ inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
+simulate = 'fake'
+
 label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
                                                                                     boarder_percentage_fire_threshold,
                                                                                     segment_percentage_fire_threshold,
@@ -371,7 +395,10 @@ label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".for
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
-events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+if simulate == 'fake':
+    events = generate_fake_stimuli()
+else:
+    events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
 p.setup(timestep=1.0)
 ATIS_events = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='ATIS_events')
 
