@@ -1,3 +1,7 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from copy import deepcopy
+
 
 BAR_SPEED = [0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]  # total_space/total_period #mm/ms
 space_metric = 1  # pixel
@@ -205,9 +209,110 @@ def parse_event_class(eventsON, eventsOFF):
 def convert_pixel_to_id(x, y):
     return (y*x_res) + x
 
+def list_circle_xy(center_x, center_y, r, x_res=304, y_res=240):
+    point_list = []
+    for x in range(-r, r):
+        y = int(np.sqrt(np.square(r) - np.square(x)))
+        point_list.append([x + center_x, y + center_y])
+        point_list.append([x + center_x, -y + center_y])
+    for y in range(-r, r):
+        x = int(np.sqrt(np.square(r) - np.square(y)))
+        if [x + center_x, y + center_y] not in point_list:
+            point_list.append([x + center_x, y + center_y])
+        if [-x + center_x, y + center_y] not in point_list:
+            point_list.append([-x + center_x, y + center_y])
+
+    # xs = []
+    # ys = []
+    # for point in point_list:
+    #     xs.append(point[0])
+    #     ys.append(point[1])
+    # fig = plt.figure()
+    # ax = fig.add_subplot(1, 1, 1)
+    # ax.scatter(xs, ys)
+    # plt.xlim(0, x_res)
+    # plt.ylim(0, y_res)
+    # plt.show()
+
+    return point_list
+
+def fake_circle_moving(direction, r=30, mspp=1, speed=1, start_time=0, circle_contrast='black'):
+    x_res = 304
+    y_res = 240
+    if direction == 'up':
+        start_x = x_res / 2
+        start_y = r
+        speed_x = 0
+        speed_y = speed
+        steps = y_res - (r * 2)
+    elif direction == 'down':
+        start_x = x_res / 2
+        start_y = y_res - r
+        speed_x = 0
+        speed_y = -speed
+        steps = y_res - (r * 2)
+    elif direction == 'left':
+        start_x = x_res - r
+        start_y = y_res / 2
+        speed_x = -speed
+        speed_y = 0
+        steps = x_res - (r * 2)
+    elif direction == 'right':
+        start_x = r + 1
+        start_y = y_res / 2
+        speed_x = speed
+        speed_y = 0
+        steps = x_res - (r * 2)
+    else:
+        print "incorrect direction"
+        Exception
+    if circle_contrast == 'black':
+        pixel_values = [[1 for i in range(y_res)] for j in range(x_res)]
+        new_pixel_value = 0
+        old_pixel_value = 1
+    else:
+        pixel_values = [[0 for i in range(y_res)] for j in range(x_res)]
+        new_pixel_value = 1
+        old_pixel_value = 0
+    pixel_list = list_circle_xy(start_x, start_y, r)
+    new_pixel_list = []
+    on_events = []
+    off_events = []
+    for step in range(steps):
+        time = start_time + step*mspp
+        if step:
+            # loop through old circle values and remove changes
+            for [x, y] in pixel_list:
+                if 0 <= x < x_res and 0 <= y < y_res:
+                    if [x, y] not in new_pixel_list:
+                        pixel_values[x][y] = old_pixel_value
+                        if old_pixel_value:
+                            on_events.append([x, y, time])
+                        else:
+                            off_events.append([x, y, time])
+            pixel_list = deepcopy(new_pixel_list)
+            new_pixel_list = []
+        # loop through circle values and add changes
+        for [x, y] in pixel_list:
+            new_pixel_list.append([x + speed_x, y + speed_y])
+            if 0 <= x < x_res and 0 <= y < y_res:
+                if pixel_values[x][y] == old_pixel_value:
+                    pixel_values[x][y] = new_pixel_value
+                    if new_pixel_value:
+                        on_events.append([x, y, time])
+                    else:
+                        off_events.append([x, y, time])
+    return on_events, off_events, time
+
+
 if __name__ == '__main__':
     x_res = 304
     y_res = 240
+
+    fake_circle_moving('up')
+    fake_circle_moving('down')
+    fake_circle_moving('left')
+    fake_circle_moving('right')
 
     on, off = FakeStimuliBarMoving([x_res, y_res], 1., 40., [50, 50], 'LR', 'BlackOverWhite')
 

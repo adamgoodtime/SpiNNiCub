@@ -9,7 +9,7 @@ import spynnaker8 as p
 from ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
-from generate_events import FakeStimuliBarMoving
+from generate_events import FakeStimuliBarMoving, fake_circle_moving
 
 warnings.filterwarnings("error")
 
@@ -330,15 +330,27 @@ def parse_ATIS(file_location, file_name):
         events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
-def generate_fake_stimuli(directions):
+def generate_fake_stimuli(directions, stimulus):
     all_on = []
     all_off = []
     time_stamp = 0
     for direction in directions:
-        on, off, time_stamp = FakeStimuliBarMoving([x_res, y_res], 1., 4., [50, 50], direction, 'BlackOverWhite', time_stamp)
+        if stimulus == 'square':
+            on, off, time_stamp = FakeStimuliBarMoving([x_res, y_res], 1., 4., [50, 50], direction, 'BlackOverWhite', time_stamp)
+        else:
+            on, off, time_stamp = fake_circle_moving(direction, r=30, mspp=7, start_time=time_stamp, circle_contrast='black')
         all_on.append(on)
         all_off.append(off)
-    events = parse_event_class(all_on, all_off)
+    if stimulus == 'square':
+        events = parse_event_class(all_on, all_off)
+    else:
+        events = [[] for i in range(x_res*y_res)]
+        for direction in all_on:
+            for [x, y, t] in direction:
+                events[convert_pixel_to_id(x, y)].append(t)
+        for direction in all_off:
+            for [x, y, t] in direction:
+                events[convert_pixel_to_id(x, y)].append(t)
     return events
 
 def parse_event_class(eventsON, eventsOFF):
@@ -390,7 +402,7 @@ inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-simulate = 'fake'
+simulate = 'circle'
 
 label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
                                                                                     boarder_percentage_fire_threshold,
@@ -403,9 +415,12 @@ label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".for
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
-if simulate == 'fake':
+if simulate == 'square':
     directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
-    events = generate_fake_stimuli(directions)
+    events = generate_fake_stimuli(directions, 'square')
+elif simulate == 'circle':
+    directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
+    events = generate_fake_stimuli(directions, 'circle')
 else:
     events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
 p.setup(timestep=1.0)

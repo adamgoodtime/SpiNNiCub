@@ -60,11 +60,11 @@ filter_split = 4
 overlap = 0.6
 base_weight = 5.
 boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.2
+segment_percentage_fire_threshold = 0.075
 filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 1.
+inhib_percentage_fire_threshold = 0.1
 inhib_connect_prob = 1.
-proto_scale = 0.55
+proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
 label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
@@ -110,6 +110,7 @@ def plot_spikes(file_location, file_name):
     z = []
     t = []
     for spike in spike_data:
+        # if np.random.random() < 0.01:
         x.append(spike[0])
         y.append(spike[1])
         z.append(1)
@@ -118,7 +119,7 @@ def plot_spikes(file_location, file_name):
     list_data.sort(key=lambda x: x[2])
 
     xlim = 304
-    ylim = 80
+    ylim = 240
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection='3d')
@@ -130,6 +131,7 @@ def plot_spikes(file_location, file_name):
     # ax1.get_shared_x_axes().join(ax1, ax)
     # plt.xlim(0, xlim)
     # plt.ylim(0, ylim)
+    plt.title('{}'.format(label))
     plt.show()
 
     print "plotting"
