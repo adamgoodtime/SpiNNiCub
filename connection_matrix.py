@@ -330,25 +330,33 @@ def parse_ATIS(file_location, file_name):
         events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
-def generate_fake_stimuli():
-    on, off = FakeStimuliBarMoving([x_res, y_res], 1., 40., [50, 50], 'LR', 'BlackOverWhite')
-    events = parse_event_class(on, off)
+def generate_fake_stimuli(directions):
+    all_on = []
+    all_off = []
+    time_stamp = 0
+    for direction in directions:
+        on, off, time_stamp = FakeStimuliBarMoving([x_res, y_res], 1., 4., [50, 50], direction, 'BlackOverWhite', time_stamp)
+        all_on.append(on)
+        all_off.append(off)
+    events = parse_event_class(all_on, all_off)
     return events
 
 def parse_event_class(eventsON, eventsOFF):
     events = [[] for i in range(x_res*y_res)]
-    for event in eventsON:
-        x = event.x
-        y = event.y
-        timestamp = event.timestamp
-        polarity = event.polarity
-        events[convert_pixel_to_id(x, y)].append(timestamp)
-    for event in eventsOFF:
-        x = event.x
-        y = event.y
-        timestamp = event.timestamp
-        polarity = event.polarity
-        events[convert_pixel_to_id(x, y)].append(timestamp)
+    for direction in eventsON:
+        for event in direction:
+            x = event.x
+            y = event.y
+            timestamp = event.timestamp
+            polarity = event.polarity
+            events[convert_pixel_to_id(x, y)].append(timestamp)
+    for direction in eventsOFF:
+        for event in direction:
+            x = event.x
+            y = event.y
+            timestamp = event.timestamp
+            polarity = event.polarity
+            events[convert_pixel_to_id(x, y)].append(timestamp)
     return events
 
 x_res = 304
@@ -396,7 +404,8 @@ label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".for
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
 if simulate == 'fake':
-    events = generate_fake_stimuli()
+    directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
+    events = generate_fake_stimuli(directions)
 else:
     events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
 p.setup(timestep=1.0)

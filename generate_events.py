@@ -21,10 +21,9 @@ class Event(object):
         self.polarty = 0
 
 
-def FakeStimuliBarMoving(camera_resolution, bar_speed, space_metric, bar_dimensions, direction, contrast):
+def FakeStimuliBarMoving(camera_resolution, bar_speed, space_metric, bar_dimensions, direction, contrast, timestamp):
 
     time = space_metric / bar_speed
-    timestamp = 0
     eventsON = []
     eventsOFF = []
 
@@ -78,7 +77,7 @@ def FakeStimuliBarMoving(camera_resolution, bar_speed, space_metric, bar_dimensi
         ybar_start = ((camera_resolution[1] / 2) - (bar_dimensions[1] / 2))
         ybar_end = ybar_start + bar_dimensions[1]
 
-        for x in range(camera_resolution[0], 0, -1):
+        for x in range(camera_resolution[0] - 1, -1, -1):
             for y in range(ybar_start, ybar_end):
                 if (x - bar_dimensions[0] > 0):
 
@@ -152,7 +151,7 @@ def FakeStimuliBarMoving(camera_resolution, bar_speed, space_metric, bar_dimensi
         xbar_start = ((camera_resolution[0]/2)-(bar_dimensions[0]/2))
         xbar_end = xbar_start+bar_dimensions[0]
 
-        for y in range (camera_resolution[1], 0, -1):
+        for y in range (camera_resolution[1] - 1, -1, -1):
             for x in range(xbar_start,xbar_end):
                 if(y-bar_dimensions[1]>0):
 
@@ -183,7 +182,7 @@ def FakeStimuliBarMoving(camera_resolution, bar_speed, space_metric, bar_dimensi
 
             timestamp = timestamp+time
 
-    return eventsON, eventsOFF
+    return eventsON, eventsOFF, timestamp
 
 def parse_event_class(eventsON, eventsOFF):
     events = [[] for i in range(x_res*y_res)]

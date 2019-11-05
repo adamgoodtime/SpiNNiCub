@@ -59,10 +59,10 @@ for filter_size in filter_sizes:
 filter_split = 4
 overlap = 0.6
 base_weight = 5.
-boarder_percentage_fire_threshold = 0.1
+boarder_percentage_fire_threshold = 0.2
 segment_percentage_fire_threshold = 0.2
 filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 0.1
+inhib_percentage_fire_threshold = 1.
 inhib_connect_prob = 1.
 proto_scale = 0.55
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
