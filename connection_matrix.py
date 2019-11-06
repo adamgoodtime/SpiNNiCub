@@ -330,6 +330,20 @@ def parse_ATIS(file_location, file_name):
         events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
+def combine_parsed_ATIS(event_list):
+    time_offset = 0
+    max_time = 0
+    events = [[] for i in range(x_res*y_res)]
+    for direction in event_list:
+        for neuron_id in range(len(direction)):
+            for time in range(len(direction[neuron_id])):
+                new_time = direction[neuron_id][time] + time_offset
+                events[neuron_id].append(new_time)
+                if new_time > max_time:
+                    max_time = new_time
+        time_offset = max_time
+    return events
+
 def generate_fake_stimuli(directions, stimulus):
     all_on = []
     all_off = []
@@ -402,7 +416,7 @@ inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-simulate = 'circle'
+simulate = 'sim_dir'
 
 label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
                                                                                     boarder_percentage_fire_threshold,
@@ -411,7 +425,7 @@ label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".for
                                                                                     inhib_percentage_fire_threshold,
                                                                                     inhib_connect_prob,
                                                                                     proto_scale, inhib, filter_sizes)
-
+print "Creating events"
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
@@ -421,8 +435,23 @@ if simulate == 'square':
 elif simulate == 'circle':
     directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
     events = generate_fake_stimuli(directions, 'circle')
+elif simulate == 'sim_dir':
+    events_RL = parse_ATIS('ATIS/semd_Datasets/RL', 'decoded_events.txt')
+    events_LR = parse_ATIS('ATIS/semd_Datasets/LR', 'decoded_events.txt')
+    events_BT = parse_ATIS('ATIS/semd_Datasets/BT', 'decoded_events.txt')
+    events_TB = parse_ATIS('ATIS/semd_Datasets/TB', 'decoded_events.txt')
+    combined_events = [events_RL, events_LR, events_BT, events_TB]
+    events = combine_parsed_ATIS(combined_events)
 else:
     events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+print "Events created"
+runtime = 0
+for neuron_id in range(len(events)):
+    for time in events[neuron_id]:
+        if time > runtime:
+            runtime = time
+runtime = int(np.ceil(runtime)) + 1000
+print "running for", runtime, "ms"
 p.setup(timestep=1.0)
 ATIS_events = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='ATIS_events')
 
@@ -453,7 +482,7 @@ for filter in list_of_filter_sizes:
                                                                                      percentage_fire_threshold=segment_percentage_fire_threshold,
                                                                                      inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
                                                                                      inhib_connect_prob=inhib_connect_prob,
-                                                                                     plot=False)
+                                                                                     plot=True)
         # create neurons for each segment of filter
         filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
                                                label='segments {} - {}'.format(filter, rotation)))
@@ -499,7 +528,7 @@ for idx, proto_object_pop in enumerate(all_proto_object_pops):
     print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
     for object in proto_object_pop:
         object.record('all')
-p.run(15*1000)
+p.run(runtime)
 
 print "saving"
 boarder_data = boarder_population.get_data()

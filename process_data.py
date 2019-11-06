@@ -28,18 +28,10 @@ def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     return list_of_corners
 
 def convert_filter_xy_to_proto_centre(filter_x, filter_y, filter_width, filter_height, overlap):
-    # list_of_corners = create_filter_boundaries(filter_width, filter_height, overlap)
-    # for corner in list_of_corners:
-    #     if corner[2] == filter_x and corner[3] == filter_y:
-    #         x = corner[0] - (filter_width / 2)
-    #         y = corner[1] - (filter_height / 2)
-    #         break
-
     x = filter_x * (filter_width - (overlap * filter_width))
     x += (filter_width / 2) + peripheral_x
     y = filter_y * (filter_height - (overlap * filter_height))
     y += (filter_height / 2) + peripheral_y
-
     return x, y
 
 x_res = 304
@@ -60,10 +52,10 @@ filter_split = 4
 overlap = 0.6
 base_weight = 5.
 boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.075
+segment_percentage_fire_threshold = 0.175
 filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 0.1
-inhib_connect_prob = 1.
+inhib_percentage_fire_threshold = 1.
+inhib_connect_prob = 0.1
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
@@ -157,5 +149,20 @@ proto spikes for testing inhibition
     inhib_percentage_fire_threshold = 0.1, 0.15, 0.2, 0.3, 0.4
     inhib_connect_prob = 1.
     proto_scale = 0.55
+    
+good spikes for circle detection
+    filter_sizes = [100, 70, 46, 30]
+    list_of_filter_sizes = []
+    for filter_size in filter_sizes:
+        list_of_filter_sizes.append([filter_size, filter_size])
+    filter_split = 4
+    overlap = 0.6
+    base_weight = 5.
+    boarder_percentage_fire_threshold = 0.2
+    segment_percentage_fire_threshold = 0.175, 0.2
+    filter_percentage_fire_threshold = 0.8
+    inhib_percentage_fire_threshold = 1.
+    inhib_connect_prob = 0.1
+    proto_scale = 0.75
 '''
 
