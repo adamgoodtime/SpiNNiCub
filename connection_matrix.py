@@ -418,14 +418,15 @@ inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
 simulate = 'sim_dir'
 
-label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
-                                                                                    boarder_percentage_fire_threshold,
-                                                                                    segment_percentage_fire_threshold,
-                                                                                    filter_percentage_fire_threshold,
-                                                                                    inhib_percentage_fire_threshold,
-                                                                                    inhib_connect_prob,
-                                                                                    proto_scale, inhib, filter_sizes)
-print "Creating events"
+label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                       base_weight,
+                                                                                       boarder_percentage_fire_threshold,
+                                                                                       segment_percentage_fire_threshold,
+                                                                                       filter_percentage_fire_threshold,
+                                                                                       inhib_percentage_fire_threshold,
+                                                                                       inhib_connect_prob,proto_scale,
+                                                                                       inhib, filter_sizes)
+print "Creating events for", label
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
