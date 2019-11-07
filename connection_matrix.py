@@ -409,10 +409,10 @@ filter_split = 4
 overlap = 0.6
 base_weight = 5.
 boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.2
+segment_percentage_fire_threshold = 0.1
 filter_percentage_fire_threshold = 0.8
 inhib_percentage_fire_threshold = 1.
-inhib_connect_prob = 0.1
+inhib_connect_prob = 1.
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
@@ -424,9 +424,9 @@ label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".
                                                                                        segment_percentage_fire_threshold,
                                                                                        filter_percentage_fire_threshold,
                                                                                        inhib_percentage_fire_threshold,
-                                                                                       inhib_connect_prob,proto_scale,
+                                                                                       inhib_connect_prob, proto_scale,
                                                                                        inhib, filter_sizes)
-print "Creating events for", label
+print "\nCreating events for", label
 # extract input data
 # dm = DataManager()
 # dm.load_AE_from_yarp('ATIS')
@@ -437,11 +437,14 @@ elif simulate == 'circle':
     directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
     events = generate_fake_stimuli(directions, 'circle')
 elif simulate == 'sim_dir':
-    events_RL = parse_ATIS('ATIS/semd_Datasets/RL', 'decoded_events.txt')
-    events_LR = parse_ATIS('ATIS/semd_Datasets/LR', 'decoded_events.txt')
-    events_BT = parse_ATIS('ATIS/semd_Datasets/BT', 'decoded_events.txt')
-    events_TB = parse_ATIS('ATIS/semd_Datasets/TB', 'decoded_events.txt')
-    combined_events = [events_RL, events_LR, events_BT, events_TB]
+    contrasts = ['high', 'medium', 'low']
+    locations = ['RL', 'LR', 'BT', 'TB']
+    combined_events = []
+    for contrast in contrasts:
+        print contrast, ':'
+        for location in locations:
+            print "\t", location
+            combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
     events = combine_parsed_ATIS(combined_events)
 else:
     events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
@@ -483,7 +486,7 @@ for filter in list_of_filter_sizes:
                                                                                      percentage_fire_threshold=segment_percentage_fire_threshold,
                                                                                      inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
                                                                                      inhib_connect_prob=inhib_connect_prob,
-                                                                                     plot=True)
+                                                                                     plot=False)
         # create neurons for each segment of filter
         filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
                                                label='segments {} - {}'.format(filter, rotation)))

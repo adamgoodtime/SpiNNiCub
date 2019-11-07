@@ -155,5 +155,8 @@ if __name__ == '__main__':
 
     
     dm = DataManager()
-    dm.load_AE_from_yarp('semd_Datasets/RL')
+    file_location = 'medium'
+    locations = ['RL', 'LR', 'BT', 'TB']
+    for location in locations:
+        dm.load_AE_from_yarp('{}/{}'.format(file_location, location))
 

@@ -52,20 +52,23 @@ filter_split = 4
 overlap = 0.6
 base_weight = 5.
 boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.175
+segment_percentage_fire_threshold = 0.1
 filter_percentage_fire_threshold = 0.8
 inhib_percentage_fire_threshold = 1.
-inhib_connect_prob = 0.1
+inhib_connect_prob = 1.
 proto_scale = 0.75
 inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
-                                                                                    boarder_percentage_fire_threshold,
-                                                                                    segment_percentage_fire_threshold,
-                                                                                    filter_percentage_fire_threshold,
-                                                                                    inhib_percentage_fire_threshold,
-                                                                                    inhib_connect_prob,
-                                                                                    proto_scale, inhib, filter_sizes)
+simulate = 'sim_dir'
+
+label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                       base_weight,
+                                                                                       boarder_percentage_fire_threshold,
+                                                                                       segment_percentage_fire_threshold,
+                                                                                       filter_percentage_fire_threshold,
+                                                                                       inhib_percentage_fire_threshold,
+                                                                                       inhib_connect_prob, proto_scale,
+                                                                                       inhib, filter_sizes)
 def extract_spikes():
     file_location = "run_data"
 
@@ -149,6 +152,14 @@ proto spikes for testing inhibition
     inhib_percentage_fire_threshold = 0.1, 0.15, 0.2, 0.3, 0.4
     inhib_connect_prob = 1.
     proto_scale = 0.55
+
+label = "fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(filter_split, overlap, base_weight,
+                                                                                    boarder_percentage_fire_threshold,
+                                                                                    segment_percentage_fire_threshold,
+                                                                                    filter_percentage_fire_threshold,
+                                                                                    inhib_percentage_fire_threshold,
+                                                                                    inhib_connect_prob,
+                                                                                    proto_scale, inhib, filter_sizes)
     
 good spikes for circle detection
     filter_sizes = [100, 70, 46, 30]
