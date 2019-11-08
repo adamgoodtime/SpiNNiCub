@@ -9,6 +9,10 @@ import spynnaker8 as p
 from ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
+import imageio
+from scipy.stats import multivariate_normal
+import sys
+from connection_matrix import parse_ATIS, combine_parsed_ATIS
 
 warnings.filterwarnings("error")
 
@@ -34,41 +38,6 @@ def convert_filter_xy_to_proto_centre(filter_x, filter_y, filter_width, filter_h
     y += (filter_height / 2) + peripheral_y
     return x, y
 
-x_res = 304
-y_res = 240
-fovea_x = 300
-fovea_y = 236
-peripheral_x = (x_res - fovea_x) / 2
-peripheral_y = (y_res - fovea_y) / 2
-horizontal_split = 1
-veritcal_split = 1
-
-# connection configurations:
-filter_sizes = [100, 70, 46, 30]
-list_of_filter_sizes = []
-for filter_size in filter_sizes:
-    list_of_filter_sizes.append([filter_size, filter_size])
-filter_split = 4
-overlap = 0.6
-base_weight = 5.
-boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.1
-filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 1.
-inhib_connect_prob = 1.
-proto_scale = 0.75
-inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
-
-simulate = 'sim_dir'
-
-label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                       base_weight,
-                                                                                       boarder_percentage_fire_threshold,
-                                                                                       segment_percentage_fire_threshold,
-                                                                                       filter_percentage_fire_threshold,
-                                                                                       inhib_percentage_fire_threshold,
-                                                                                       inhib_connect_prob, proto_scale,
-                                                                                       inhib, filter_sizes)
 def extract_spikes():
     file_location = "run_data"
 
@@ -131,10 +100,213 @@ def plot_spikes(file_location, file_name):
 
     print "plotting"
 
+def create_gaussians(filter_size):
+    x, y = np.mgrid[-1.0:1.0:complex(0, filter_size), -1.0:1.0:complex(0, filter_size)]
+    # Need an (N, 2) array of (x, y) pairs.
+    xy = np.column_stack([x.flat, y.flat])
+    mu = np.array([0.0, 0.0])
+    sigma = np.array([0.3, 0.3])
+    covariance = np.diag(sigma ** 2)
+    z = multivariate_normal.pdf(xy, mean=mu, cov=covariance)
 
+    # Reshape back to a grid.
+    z = z.reshape(x.shape)
+    # Normalise
+    z /= z.max()
+    # z *= filter_size
+    return z
 
-plot_spikes("run_data", label)
+def create_video(file_location, file_name, frame_rate, spikes=[]):
+    if spikes:
+        spike_data = spikes
+    else:
+        spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
+    frame_duration = 1000. / frame_rate
 
+    print "parsing data"
+    list_data = []
+    x = []
+    y = []
+    t = []
+    max_time = 0.
+    for spike in spike_data:
+        x.append(spike[0])
+        y.append(spike[1])
+        t.append(spike[2])
+        if spike[2] > max_time:
+            max_time = spike[2]
+        if not isinstance(spike, list):
+            list_data.append(spike.tolist())
+        else:
+            list_data.append(spike)
+    list_data.sort(key=lambda x: x[2])
+
+    filter_gaussians = {}
+    for filter_size in filter_sizes:
+        filter_gaussians['{}'.format(filter_size)] = create_gaussians(filter_size)
+
+    print "binning frames"
+    binned_frames = [[[0 for y in range(y_res)] for x in range(x_res)] for i in range(int(np.ceil(max_time / frame_duration)))]
+
+    # setup toolbar
+    # toolbar_width = 40
+    # print '[{}]'.format('-'*toolbar_width)
+    # sys.stdout.write("[%s]" % (" " * toolbar_width))
+    # sys.stdout.flush()
+    # sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
+    current_point = 0
+    progression_count = 0
+    for spike in list_data:
+        x = int(spike[0])
+        y = int(spike[1])
+        t = spike[2]
+        filter_size = int(spike[3])
+        time_index = int(t / frame_duration)
+        if filter_sizes[0] == 1:
+            binned_frames[time_index][x][y] += 1
+        else:
+            gaussian = filter_gaussians['{}'.format(filter_size)]
+            for i in range(len(gaussian)):
+                for j in range(len(gaussian[0])):
+                    new_x = x + i - (filter_size / 2)
+                    new_y = y + j - (filter_size / 2)
+                    if 0 <= new_x < x_res and 0 <= new_y < y_res:
+                        binned_frames[time_index][new_x][new_y] += gaussian[i][j]
+        progression_count += 1
+        print progression_count, '/', len(list_data)
+    #     if current_point < int(round((float(list_data.index(spike)) / float(len(list_data))) * float(toolbar_width))):
+    #         progression_list.append([float(list_data.index(spike)),  float(len(list_data))])
+    #         current_point = int(round((float(list_data.index(spike)) / float(len(list_data))) * float(toolbar_width)))
+    #         sys.stdout.write("-")
+    #         sys.stdout.flush()
+    # sys.stdout.write("]\n")
+
+    print 'creating images'
+    xlim = 304
+    ylim = 240
+    filenames = []
+    # setup toolbar
+    toolbar_width = 40
+    print '[{}]'.format('-'*toolbar_width)
+    sys.stdout.write("[%s]" % (" " * toolbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
+    current_point = 0
+    for frame in binned_frames:
+        plt.imshow(frame, cmap='hot', interpolation='nearest')
+        title = '{} - {}'.format(file_name, binned_frames.index(frame))
+        title += '.jpg'
+        filenames.append(file_location+'/videos/'+title)
+        plt.savefig(file_location+'/videos/'+title, format='jpeg', bbox_inches='tight')
+        # plt.show()
+        plt.clf()
+        if current_point < int(round((float(binned_frames.index(frame)) / float(len(binned_frames))) * float(toolbar_width))):
+            current_point = int(round((float(binned_frames.index(frame)) / float(len(binned_frames))) * float(toolbar_width)))
+            sys.stdout.write("-")
+            sys.stdout.flush()
+    sys.stdout.write("]\n")
+
+    print "creating video"
+    images = []
+    for filename in filenames:
+        images.append(imageio.imread(filename))
+    imageio.mimsave(file_location+'/videos/'+file_name+'.gif', images)
+
+    # with imageio.get_writer('/path/to/movie.gif', mode='I') as writer:
+    #     for filename in filenames:
+    #         image = imageio.imread(filename)
+    #         writer.append_data(image)
+
+def parse_events_to_spike_times(events):
+    global filter_sizes
+    filter_sizes = [1]
+    spikes = []
+    for neuron in range(len(events)):
+        for time in events[neuron]:
+            x = neuron % x_res
+            y = (neuron - x) / x_res
+            spikes.append([x, y, time, 1])
+    return spikes
+
+if __name__ == '__main__':
+    x_res = 304
+    y_res = 240
+    fovea_x = 300
+    fovea_y = 236
+    peripheral_x = (x_res - fovea_x) / 2
+    peripheral_y = (y_res - fovea_y) / 2
+    horizontal_split = 1
+    veritcal_split = 1
+
+    # connection configurations:
+    filter_sizes = [100, 70, 46, 30]
+    list_of_filter_sizes = []
+    for filter_size in filter_sizes:
+        list_of_filter_sizes.append([filter_size, filter_size])
+    filter_split = 4
+    overlap = 0.6
+    base_weight = 5.
+    boarder_percentage_fire_threshold = 0.2
+    segment_percentage_fire_threshold = 0.04
+    filter_percentage_fire_threshold = 0.8
+    inhib_percentage_fire_threshold = 0.04
+    inhib_connect_prob = 1.
+    proto_scale = 0.75
+    inhib = False  # [0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+
+    simulate = 'sim_dir'
+
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                           base_weight,
+                                                                                           boarder_percentage_fire_threshold,
+                                                                                           segment_percentage_fire_threshold,
+                                                                                           filter_percentage_fire_threshold,
+                                                                                           inhib_percentage_fire_threshold,
+                                                                                           inhib_connect_prob, proto_scale,
+                                                                                           inhib, filter_sizes)
+   # plot_spikes("run_data", label)
+    contrasts = ['high', 'medium', 'low']
+    locations = ['RL', 'LR', 'BT', 'TB']
+    combined_events = []
+    for contrast in contrasts:
+        print contrast, ':'
+        for location in locations:
+            print "\t", location
+            combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
+    events = combine_parsed_ATIS(combined_events)
+    spikes = parse_events_to_spike_times(events)
+    create_video('run_data', 'input spikes', 2, spikes=spikes)
+'''
+values = [0.08, 0.06, 0.04, 0.02]
+
+for value in values:
+    print "current value:", value
+    inhib_percentage_fire_threshold = value
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                           base_weight,
+                                                                                           boarder_percentage_fire_threshold,
+                                                                                           segment_percentage_fire_threshold,
+                                                                                           filter_percentage_fire_threshold,
+                                                                                           inhib_percentage_fire_threshold,
+                                                                                           inhib_connect_prob, proto_scale,
+                                                                                           inhib, filter_sizes)
+    create_video("run_data", label, 2)
+
+inhib_percentage_fire_threshold = 0.1
+values = [0.08, 0.06, 0.04, 0.02]
+for value in values:
+    print "current value:", value
+    segment_percentage_fire_threshold = value
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                           base_weight,
+                                                                                           boarder_percentage_fire_threshold,
+                                                                                           segment_percentage_fire_threshold,
+                                                                                           filter_percentage_fire_threshold,
+                                                                                           inhib_percentage_fire_threshold,
+                                                                                           inhib_connect_prob, proto_scale,
+                                                                                           inhib, filter_sizes)
+    create_video("run_data", label, 2)
+'''
 print "done"
 
 '''

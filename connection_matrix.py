@@ -387,376 +387,378 @@ def parse_event_class(eventsON, eventsOFF):
 
 x_res = 304
 y_res = 240
-fovea_x = 300
-fovea_y = 236
-peripheral_x = (x_res - fovea_x) / 2
-peripheral_y = (y_res - fovea_y) / 2
-horizontal_split = 1
-veritcal_split = 1
 
-neuron_params = {
-    # balance the refractory period/tau_mem so membrane has lost contribution before next spike
-}
-##############################
-# connection configurations: #
-##############################
-# filter_sizes = [30, 46, 70, 100]
-filter_sizes = [100, 70, 46, 30]
-list_of_filter_sizes = []
-for filter_size in filter_sizes:
-    list_of_filter_sizes.append([filter_size, filter_size])
-filter_split = 4
-overlap = 0.6
-base_weight = 5.
-boarder_percentage_fire_threshold = 0.2
-segment_percentage_fire_threshold = 0.1
-filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 1.
-inhib_connect_prob = 1.
-proto_scale = 0.75
-inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+if __name__ == '__main__':
+    fovea_x = 300
+    fovea_y = 236
+    peripheral_x = (x_res - fovea_x) / 2
+    peripheral_y = (y_res - fovea_y) / 2
+    horizontal_split = 1
+    veritcal_split = 1
 
-simulate = 'sim_dir'
+    neuron_params = {
+        # balance the refractory period/tau_mem so membrane has lost contribution before next spike
+    }
+    ##############################
+    # connection configurations: #
+    ##############################
+    # filter_sizes = [30, 46, 70, 100]
+    filter_sizes = [100, 70, 46, 30]
+    list_of_filter_sizes = []
+    for filter_size in filter_sizes:
+        list_of_filter_sizes.append([filter_size, filter_size])
+    filter_split = 4
+    overlap = 0.6
+    base_weight = 5.
+    boarder_percentage_fire_threshold = 0.2
+    segment_percentage_fire_threshold = 0.1
+    filter_percentage_fire_threshold = 0.8
+    inhib_percentage_fire_threshold = 1.
+    inhib_connect_prob = 1.
+    proto_scale = 0.75
+    inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                       base_weight,
-                                                                                       boarder_percentage_fire_threshold,
-                                                                                       segment_percentage_fire_threshold,
-                                                                                       filter_percentage_fire_threshold,
-                                                                                       inhib_percentage_fire_threshold,
-                                                                                       inhib_connect_prob, proto_scale,
-                                                                                       inhib, filter_sizes)
-print "\nCreating events for", label
-# extract input data
-# dm = DataManager()
-# dm.load_AE_from_yarp('ATIS')
-if simulate == 'square':
-    directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
-    events = generate_fake_stimuli(directions, 'square')
-elif simulate == 'circle':
-    directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
-    events = generate_fake_stimuli(directions, 'circle')
-elif simulate == 'sim_dir':
-    contrasts = ['high', 'medium', 'low']
-    locations = ['RL', 'LR', 'BT', 'TB']
-    combined_events = []
-    for contrast in contrasts:
-        print contrast, ':'
-        for location in locations:
-            print "\t", location
-            combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
-    events = combine_parsed_ATIS(combined_events)
-else:
-    events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
-print "Events created"
-runtime = 0
-for neuron_id in range(len(events)):
-    for time in events[neuron_id]:
-        if time > runtime:
-            runtime = time
-runtime = int(np.ceil(runtime)) + 1000
-print "running for", runtime, "ms"
-p.setup(timestep=1.0)
-ATIS_events = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='ATIS_events')
+    simulate = 'sim_dir'
 
-# create boarder connections and populations
-boarder_connections = create_peripheral_mapping(base_weight=base_weight,
-                                                percentage_fire_threshold=boarder_percentage_fire_threshold)
-boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
-                                  label="boarder populations")
-boarder_population.record('all')
-p.Projection(ATIS_events, boarder_population, p.FromListConnector(boarder_connections))
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                           base_weight,
+                                                                                           boarder_percentage_fire_threshold,
+                                                                                           segment_percentage_fire_threshold,
+                                                                                           filter_percentage_fire_threshold,
+                                                                                           inhib_percentage_fire_threshold,
+                                                                                           inhib_connect_prob, proto_scale,
+                                                                                           inhib, filter_sizes)
+    print "\nCreating events for", label
+    # extract input data
+    # dm = DataManager()
+    # dm.load_AE_from_yarp('ATIS')
+    if simulate == 'square':
+        directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
+        events = generate_fake_stimuli(directions, 'square')
+    elif simulate == 'circle':
+        directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
+        events = generate_fake_stimuli(directions, 'circle')
+    elif simulate == 'sim_dir':
+        contrasts = ['high', 'medium', 'low']
+        locations = ['RL', 'LR', 'BT', 'TB']
+        combined_events = []
+        for contrast in contrasts:
+            print contrast, ':'
+            for location in locations:
+                print "\t", location
+                combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
+        events = combine_parsed_ATIS(combined_events)
+    else:
+        events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+    print "Events created"
+    runtime = 0
+    for neuron_id in range(len(events)):
+        for time in events[neuron_id]:
+            if time > runtime:
+                runtime = time
+    runtime = int(np.ceil(runtime)) + 1000
+    print "running for", runtime, "ms"
+    p.setup(timestep=1.0)
+    ATIS_events = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='ATIS_events')
 
-# create filters and connections from input video stream
-all_filter_segments = []
-all_filter_populations = []
-all_proto_object_pops = []
-for filter in list_of_filter_sizes:
-    print "SpiNN setup for filter", filter
-    # for each rotation, 0 -> 7pi/4
-    filter_segments = []
-    filter_populations = []
-    for rotation in range(8):
-        print "Rotation", rotation+1, "/ 8"
-        segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
-                                                                                     overlap=overlap,
-                                                                                     rotation=rotation,
-                                                                                     filter_split=filter_split,
-                                                                                     base_weight=base_weight/float(filter_split),
-                                                                                     percentage_fire_threshold=segment_percentage_fire_threshold,
-                                                                                     inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
-                                                                                     inhib_connect_prob=inhib_connect_prob,
-                                                                                     plot=False)
-        # create neurons for each segment of filter
-        filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                               label='segments {} - {}'.format(filter, rotation)))
-        # project events to neurons/filter segments
-        p.Projection(ATIS_events, filter_segments[-1], p.FromListConnector(segment_connection))
-        # connect segments into a single filter neuron
-        filter_connections = create_filter_neuron_connections(filter_split=filter_split,
-                                                              no_neurons=no_neurons,
-                                                              base_weight=base_weight,
-                                                              percentage_fire_threshold=filter_percentage_fire_threshold)
-        filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
-                                                  label='filter {} - {}'.format(filter, rotation)))
-        if len(inhib_connection) != 0:
-            p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
-        p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
-        filter_populations[-1].record('spikes')
-        filter_segments[-1].record('spikes')
-        print "number of neurons in segments = ", no_neurons
-        print "number of neurons in filters = ", (no_neurons/filter_split)
-        print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
+    # create boarder connections and populations
+    boarder_connections = create_peripheral_mapping(base_weight=base_weight,
+                                                    percentage_fire_threshold=boarder_percentage_fire_threshold)
+    boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
+                                      label="boarder populations")
+    boarder_population.record('all')
+    p.Projection(ATIS_events, boarder_population, p.FromListConnector(boarder_connections))
 
-    print "total number of neurons in segments = ", no_neurons * 8
-    print "total number of neurons in filters = ", (no_neurons / filter_split) * 8
-    print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
-    # create proto object
-    all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
-    all_filter_segments.append(filter_segments)
-    all_filter_populations.append(filter_populations)
-    # opposite inhibition for filter segments
-    if inhib:
-        for rotation in range(4):
-            p.Projection(filter_populations[rotation], filter_populations[rotation+4],
-                         p.OneToOneConnector(),
-                         p.StaticSynapse(weight=base_weight, delay=1),
-                         receptor_type='inhibitory')
-            p.Projection(filter_populations[rotation+4], filter_populations[rotation],
-                         p.OneToOneConnector(),
-                         p.StaticSynapse(weight=base_weight, delay=1),
-                         receptor_type='inhibitory')
+    # create filters and connections from input video stream
+    all_filter_segments = []
+    all_filter_populations = []
+    all_proto_object_pops = []
+    for filter in list_of_filter_sizes:
+        print "SpiNN setup for filter", filter
+        # for each rotation, 0 -> 7pi/4
+        filter_segments = []
+        filter_populations = []
+        for rotation in range(8):
+            print "Rotation", rotation+1, "/ 8"
+            segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
+                                                                                         overlap=overlap,
+                                                                                         rotation=rotation,
+                                                                                         filter_split=filter_split,
+                                                                                         base_weight=base_weight/float(filter_split),
+                                                                                         percentage_fire_threshold=segment_percentage_fire_threshold,
+                                                                                         inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
+                                                                                         inhib_connect_prob=inhib_connect_prob,
+                                                                                         plot=False)
+            # create neurons for each segment of filter
+            filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                                   label='segments {} - {}'.format(filter, rotation)))
+            # project events to neurons/filter segments
+            p.Projection(ATIS_events, filter_segments[-1], p.FromListConnector(segment_connection))
+            # connect segments into a single filter neuron
+            filter_connections = create_filter_neuron_connections(filter_split=filter_split,
+                                                                  no_neurons=no_neurons,
+                                                                  base_weight=base_weight,
+                                                                  percentage_fire_threshold=filter_percentage_fire_threshold)
+            filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
+                                                      label='filter {} - {}'.format(filter, rotation)))
+            if len(inhib_connection) != 0:
+                p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
+            p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
+            filter_populations[-1].record('spikes')
+            filter_segments[-1].record('spikes')
+            print "number of neurons in segments = ", no_neurons
+            print "number of neurons in filters = ", (no_neurons/filter_split)
+            print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
+
+        print "total number of neurons in segments = ", no_neurons * 8
+        print "total number of neurons in filters = ", (no_neurons / filter_split) * 8
+        print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
+        # create proto object
+        all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
+        all_filter_segments.append(filter_segments)
+        all_filter_populations.append(filter_populations)
+        # opposite inhibition for filter segments
+        if inhib:
+            for rotation in range(4):
+                p.Projection(filter_populations[rotation], filter_populations[rotation+4],
+                             p.OneToOneConnector(),
+                             p.StaticSynapse(weight=base_weight, delay=1),
+                             receptor_type='inhibitory')
+                p.Projection(filter_populations[rotation+4], filter_populations[rotation],
+                             p.OneToOneConnector(),
+                             p.StaticSynapse(weight=base_weight, delay=1),
+                             receptor_type='inhibitory')
 
 
-for idx, proto_object_pop in enumerate(all_proto_object_pops):
-    print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
-    for object in proto_object_pop:
-        object.record('all')
-p.run(runtime)
+    for idx, proto_object_pop in enumerate(all_proto_object_pops):
+        print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
+        for object in proto_object_pop:
+            object.record('spikes')
+    p.run(runtime)
 
-print "saving"
-boarder_data = boarder_population.get_data()
-np.save('board pop data {}.npy'.format(label), boarder_data)
+    print "saving"
+    boarder_data = boarder_population.get_data()
+    np.save('board pop data {}.npy'.format(label), boarder_data)
 
-all_filter_segments_data = []
-for filter_size, filter_data in enumerate(all_filter_segments):
-    filter_segments_data = []
-    for data in filter_data:
-        filter_segments_data.append([data.get_data(), data.label])
-    all_filter_segments_data.append(filter_segments_data)
-    np.save('filter segments data {}-{}.npy'.format(filter_sizes[filter_size], label), filter_segments_data)
+    all_filter_segments_data = []
+    for filter_size, filter_data in enumerate(all_filter_segments):
+        filter_segments_data = []
+        for data in filter_data:
+            filter_segments_data.append([data.get_data(), data.label])
+        all_filter_segments_data.append(filter_segments_data)
+        np.save('filter segments data {}-{}.npy'.format(filter_sizes[filter_size], label), filter_segments_data)
 
-all_filter_populations_data = []
-for filter_size, filter_data in enumerate(all_filter_populations):
-    filter_populations_data = []
-    for data in filter_data:
-        filter_populations_data.append([data.get_data(), data.label])
-    all_filter_populations_data.append(filter_populations_data)
-    np.save('filter pop data {}-{}.npy'.format(filter_sizes[filter_size], label), filter_populations_data)
+    all_filter_populations_data = []
+    for filter_size, filter_data in enumerate(all_filter_populations):
+        filter_populations_data = []
+        for data in filter_data:
+            filter_populations_data.append([data.get_data(), data.label])
+        all_filter_populations_data.append(filter_populations_data)
+        np.save('filter pop data {}-{}.npy'.format(filter_sizes[filter_size], label), filter_populations_data)
 
-all_proto_object_data = []
-for filter_size, proto_pop in enumerate(all_proto_object_pops):
-    object_data = []
-    for object in proto_pop:
-        object_data.append([object.get_data(), object.label])
-    all_proto_object_data.append(object_data)
-    np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
-print "all saved"
+    all_proto_object_data = []
+    for filter_size, proto_pop in enumerate(all_proto_object_pops):
+        object_data = []
+        for object in proto_pop:
+            object_data.append([object.get_data(), object.label])
+        all_proto_object_data.append(object_data)
+        np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
+    print "all saved"
 
-filter_segment_spikes = [0 for i in range(len(filter_sizes))]
-for filter_idx, filter_segments_data in enumerate(all_filter_segments_data):
-    for idx, pop in enumerate(filter_segments_data):
-        spikes = pop[0].segments[0].spiketrains
-        for id2, neuron in enumerate(spikes):
-            filter_segment_spikes[filter_idx] += neuron.size
-            print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
-filter_pop_spikes = [0 for i in range(len(filter_sizes))]
-for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
-    for idx, pop in enumerate(filter_populations_data):
-        spikes = pop[0].segments[0].spiketrains
-        for id2, neuron in enumerate(spikes):
-            filter_pop_spikes[filter_idx] += neuron.size
-            print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
-object_spikes = [0 for i in range(len(filter_sizes))]
-coords_and_times = []
-all_spike_count = {}
-for filter_idx, object_data in enumerate(all_proto_object_data):
-    spike_count = {}
-    for idx, pop in enumerate(object_data):
-        spikes = pop[0].segments[0].spiketrains
-        for id2, neuron in enumerate(spikes):
-            object_spikes[filter_idx] += neuron.size
-            print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
-            split_data = pop[1].split('-')
-            spike_data = pop[0].segments[0].spiketrains
-            spikes = 0
-            for neuron in spike_data:
-                spikes += neuron.size
-            if spikes:
-                spike_times = spike_data[0].magnitude
-                x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
-                for spike_time in spike_times:
-                    coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
-                    if '({}, {})'.format(x, y) in spike_count:
-                        spike_count['({}, {})'.format(x, y)] += 1
-                    else:
-                        spike_count['({}, {})'.format(x, y)] = 1
-    all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
-for filter_size in all_spike_count:
-    print "filter size:", filter_size
-    for location in all_spike_count[filter_size]:
-        print location, all_spike_count[filter_size][location]
-np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
+    filter_segment_spikes = [0 for i in range(len(filter_sizes))]
+    for filter_idx, filter_segments_data in enumerate(all_filter_segments_data):
+        for idx, pop in enumerate(filter_segments_data):
+            spikes = pop[0].segments[0].spiketrains
+            for id2, neuron in enumerate(spikes):
+                filter_segment_spikes[filter_idx] += neuron.size
+                print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
+    filter_pop_spikes = [0 for i in range(len(filter_sizes))]
+    for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
+        for idx, pop in enumerate(filter_populations_data):
+            spikes = pop[0].segments[0].spiketrains
+            for id2, neuron in enumerate(spikes):
+                filter_pop_spikes[filter_idx] += neuron.size
+                print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
+    object_spikes = [0 for i in range(len(filter_sizes))]
+    coords_and_times = []
+    all_spike_count = {}
+    for filter_idx, object_data in enumerate(all_proto_object_data):
+        spike_count = {}
+        for idx, pop in enumerate(object_data):
+            spikes = pop[0].segments[0].spiketrains
+            for id2, neuron in enumerate(spikes):
+                object_spikes[filter_idx] += neuron.size
+                print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+                split_data = pop[1].split('-')
+                spike_data = pop[0].segments[0].spiketrains
+                spikes = 0
+                for neuron in spike_data:
+                    spikes += neuron.size
+                if spikes:
+                    spike_times = spike_data[0].magnitude
+                    x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+                    for spike_time in spike_times:
+                        coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
+                        if '({}, {})'.format(x, y) in spike_count:
+                            spike_count['({}, {})'.format(x, y)] += 1
+                        else:
+                            spike_count['({}, {})'.format(x, y)] = 1
+        all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
+    for filter_size in all_spike_count:
+        print "filter size:", filter_size
+        for location in all_spike_count[filter_size]:
+            print location, all_spike_count[filter_size][location]
+    np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
 
-boarder_spikes = 0
-spikes = boarder_data.segments[0].spiketrains
-for id2, neuron in enumerate(spikes):
-    boarder_spikes += neuron.size
-    print id2, "boarder spike count:", neuron.size
-print "total boarder spikes:", boarder_spikes
-for idx, filter_size in enumerate(filter_sizes):
-    print "total spikes for {}:\n" \
-          "filter size: {}\n" \
-          "segment: {}\n" \
-          "filter: {}\n" \
-          "objects: {}".format(label, filter_size,
-                               filter_segment_spikes[idx],
-                               filter_pop_spikes[idx],
-                               object_spikes[idx])
+    boarder_spikes = 0
+    spikes = boarder_data.segments[0].spiketrains
+    for id2, neuron in enumerate(spikes):
+        boarder_spikes += neuron.size
+        print id2, "boarder spike count:", neuron.size
+    print "total boarder spikes:", boarder_spikes
+    for idx, filter_size in enumerate(filter_sizes):
+        print "total spikes for {}:\n" \
+              "filter size: {}\n" \
+              "segment: {}\n" \
+              "filter: {}\n" \
+              "objects: {}".format(label, filter_size,
+                                   filter_segment_spikes[idx],
+                                   filter_pop_spikes[idx],
+                                   object_spikes[idx])
 
-#
-# Plot
-F = Figure(
-#         # plot data for postsynaptic neuron
-#         Panel(in_spikes.segments[0].spiketrains,
-#               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    Panel(object_data[0].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[1].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[2].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[3].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[4].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[5].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[6].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[7].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    # Panel(pop_out_data.segments[0].filter(name='v')[0],
-    #       ylabel="Membrane potential (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-    #       ylabel="gsyn excitatory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-    #       ylabel="gsyn inhibitory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].spiketrains,
-    #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    # annotations="Batch: {}".format(i)
-    )
-plt.show()
-F = Figure(
-#         # plot data for postsynaptic neuron
-#         Panel(in_spikes.segments[0].spiketrains,
-#               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    Panel(object_data[8].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[9].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[10].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[11].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[12].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[13].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[14].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[15].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    # Panel(pop_out_data.segments[0].filter(name='v')[0],
-    #       ylabel="Membrane potential (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-    #       ylabel="gsyn excitatory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-    #       ylabel="gsyn inhibitory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].spiketrains,
-    #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    # annotations="Batch: {}".format(i)
-    )
-plt.show()
-F = Figure(
-#         # plot data for postsynaptic neuron
-#         Panel(in_spikes.segments[0].spiketrains,
-#               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    Panel(object_data[16].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[17].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[18].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[19].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[20].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    Panel(object_data[21].segments[0].spiketrains,
-          yticks=True, markersize=2, xlim=(0, 15000)
-          ),
-    # Panel(pop_out_data.segments[0].filter(name='v')[0],
-    #       ylabel="Membrane potential (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-    #       ylabel="gsyn excitatory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-    #       ylabel="gsyn inhibitory (mV)",
-    #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-    #       ),
-    # Panel(pop_out_data.segments[0].spiketrains,
-    #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-    # annotations="Batch: {}".format(i)
-    )
-plt.show()
+    #
+    # Plot
+    F = Figure(
+    #         # plot data for postsynaptic neuron
+    #         Panel(in_spikes.segments[0].spiketrains,
+    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        Panel(object_data[0].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[1].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[2].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[3].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[4].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[5].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[6].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[7].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        # Panel(pop_out_data.segments[0].filter(name='v')[0],
+        #       ylabel="Membrane potential (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
+        #       ylabel="gsyn excitatory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
+        #       ylabel="gsyn inhibitory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].spiketrains,
+        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        # annotations="Batch: {}".format(i)
+        )
+    plt.show()
+    F = Figure(
+    #         # plot data for postsynaptic neuron
+    #         Panel(in_spikes.segments[0].spiketrains,
+    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        Panel(object_data[8].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[9].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[10].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[11].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[12].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[13].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[14].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[15].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        # Panel(pop_out_data.segments[0].filter(name='v')[0],
+        #       ylabel="Membrane potential (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
+        #       ylabel="gsyn excitatory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
+        #       ylabel="gsyn inhibitory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].spiketrains,
+        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        # annotations="Batch: {}".format(i)
+        )
+    plt.show()
+    F = Figure(
+    #         # plot data for postsynaptic neuron
+    #         Panel(in_spikes.segments[0].spiketrains,
+    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        Panel(object_data[16].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[17].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[18].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[19].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[20].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        Panel(object_data[21].segments[0].spiketrains,
+              yticks=True, markersize=2, xlim=(0, 15000)
+              ),
+        # Panel(pop_out_data.segments[0].filter(name='v')[0],
+        #       ylabel="Membrane potential (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
+        #       ylabel="gsyn excitatory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
+        #       ylabel="gsyn inhibitory (mV)",
+        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
+        #       ),
+        # Panel(pop_out_data.segments[0].spiketrains,
+        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
+        # annotations="Batch: {}".format(i)
+        )
+    plt.show()
 
-print "done"
+    print "done"
 
 
 
