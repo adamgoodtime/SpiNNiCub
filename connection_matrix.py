@@ -138,7 +138,7 @@ def convert_pixel_to_id(x, y):
     if isinstance(simulate, str):
         return (y*x_res) + x
     else:
-        return (y << 12) + (x << 1) + 1
+        return (int(y) << 12) + (int(x) << 1) + 1
 
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     list_of_corners = []
@@ -509,7 +509,8 @@ if __name__ == '__main__':
     proto_scale = 0.75
     inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-    simulate = 'sim_dir'
+    # simulate = 'sim_dir'
+    simulate = None
 
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
                                                                                            base_weight,
