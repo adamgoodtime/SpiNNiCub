@@ -508,13 +508,13 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
             split_data = proto_object.label.split('-')
             x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
             if x < x_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector[0, 1, base_weight*boarder_weight_scale, 1])
+                p.Projection(proto_object, move_pop, p.FromListConnector([0, 1, base_weight*boarder_weight_scale, 1]))
             if x >= x_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector[0, 0, base_weight*boarder_weight_scale, 1])
+                p.Projection(proto_object, move_pop, p.FromListConnector([0, 0, base_weight*boarder_weight_scale, 1]))
             if y < y_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector[0, 2, base_weight*boarder_weight_scale, 1])
+                p.Projection(proto_object, move_pop, p.FromListConnector([0, 2, base_weight*boarder_weight_scale, 1]))
             if y >= y_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector[0, 3, base_weight*boarder_weight_scale, 1])
+                p.Projection(proto_object, move_pop, p.FromListConnector([0, 3, base_weight*boarder_weight_scale, 1]))
     # mutual inhibition
     inhibit_list = []
     for i in range(4):
