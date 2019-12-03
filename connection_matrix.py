@@ -11,6 +11,22 @@ from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
 from generate_events import FakeStimuliBarMoving, fake_circle_moving
 
+from pacman.model.constraints.key_allocator_constraints import FixedKeyAndMaskConstraint
+from pacman.model.graphs.application import ApplicationSpiNNakerLinkVertex
+from pacman.model.routing_info import BaseKeyAndMask
+from spinn_front_end_common.abstract_models.abstract_provides_n_keys_for_partition import AbstractProvidesNKeysForPartition
+from spinn_front_end_common.abstract_models.abstract_provides_outgoing_partition_constraints import AbstractProvidesOutgoingPartitionConstraints
+from spinn_utilities.overrides import overrides
+from spinn_front_end_common.abstract_models.abstract_provides_incoming_partition_constraints import AbstractProvidesIncomingPartitionConstraints
+from pacman.executor.injection_decorator import inject_items
+from pacman.operations.routing_info_allocator_algorithms.malloc_based_routing_allocator.utils import get_possible_masks
+from spinn_front_end_common.utility_models.command_sender_machine_vertex import CommandSenderMachineVertex
+
+from spinn_front_end_common.abstract_models \
+    import AbstractSendMeMulticastCommandsVertex
+from spinn_front_end_common.utility_models.multi_cast_command \
+    import MultiCastCommand
+
 warnings.filterwarnings("error")
 
 '''
@@ -21,6 +37,68 @@ Components:
 - combine parts of the proto-objects into a object/neuron
 - inhibit between competing objects
 '''
+
+NUM_NEUR_IN = 1024 #1024 # 2x240x304 mask -> 0xFFFE0000
+MASK_IN = 0xFFFFFC00 #0xFFFFFC00
+NUM_NEUR_OUT = 1024
+MASK_OUT =0xFFFFFFFC
+
+class ICUBInputVertex(
+        ApplicationSpiNNakerLinkVertex,
+        AbstractProvidesOutgoingPartitionConstraints,
+        AbstractProvidesIncomingPartitionConstraints,
+        AbstractSendMeMulticastCommandsVertex):
+
+    def __init__(self, spinnaker_link_id, board_address=None,
+                 constraints=None, label=None):
+
+        ApplicationSpiNNakerLinkVertex.__init__(
+            self, n_atoms=NUM_NEUR_IN, spinnaker_link_id=spinnaker_link_id,
+            board_address=board_address, label=label)
+
+        AbstractProvidesNKeysForPartition.__init__(self)
+        AbstractProvidesOutgoingPartitionConstraints.__init__(self)
+        AbstractSendMeMulticastCommandsVertex.__init__(self)
+
+    @overrides(AbstractProvidesOutgoingPartitionConstraints.
+               get_outgoing_partition_constraints)
+    def get_outgoing_partition_constraints(self, partition):
+        return [FixedKeyAndMaskConstraint(
+            keys_and_masks=[BaseKeyAndMask(
+                base_key=0, #upper part of the key,
+                mask=MASK_IN)])]
+                #keys, i.e. neuron addresses of the input population that sits in the ICUB vertex,
+
+    @inject_items({"graph_mapper": "MemoryGraphMapper"})
+    @overrides(AbstractProvidesIncomingPartitionConstraints.
+               get_incoming_partition_constraints,
+               additional_arguments=["graph_mapper"])
+    def get_incoming_partition_constraints(self, partition, graph_mapper):
+        if isinstance(partition.pre_vertex, CommandSenderMachineVertex):
+            return []
+        index = graph_mapper.get_machine_vertex_index(partition.pre_vertex)
+        vertex_slice = graph_mapper.get_slice(partition.pre_vertex)
+        mask = get_possible_masks(vertex_slice.n_atoms)[0]
+        key = (0x1000 + index) << 16
+        return [FixedKeyAndMaskConstraint(
+            keys_and_masks=[BaseKeyAndMask(key, mask)])]
+
+    @property
+    @overrides(AbstractSendMeMulticastCommandsVertex.start_resume_commands)
+    def start_resume_commands(self):
+        return [MultiCastCommand(
+            key=0x80000000, payload=0, repeat=5, delay_between_repeats=100)]
+
+    @property
+    @overrides(AbstractSendMeMulticastCommandsVertex.pause_stop_commands)
+    def pause_stop_commands(self):
+        return [MultiCastCommand(
+            key=0x40000000, payload=0, repeat=5, delay_between_repeats=100)]
+
+    @property
+    @overrides(AbstractSendMeMulticastCommandsVertex.timed_commands)
+    def timed_commands(self):
+        return []
 
 def zero_2pi_tan(x, y):
     angle = np.arctan2(y, x)
@@ -57,7 +135,10 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
     return VM_output, split
 
 def convert_pixel_to_id(x, y):
-    return (y*x_res) + x
+    if isinstance(simulate, str):
+        return (y*x_res) + x
+    else:
+        return (y << 12) + (x << 1) + 1
 
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     list_of_corners = []
@@ -385,6 +466,16 @@ def parse_event_class(eventsON, eventsOFF):
             events[convert_pixel_to_id(x, y)].append(timestamp)
     return events
 
+def connect_vis_pop(vis, post, connections, receptor_type='excitatory'):
+    if isinstance(simulate, str):
+        p.Projection(vis, post, p.FromListConnector(connections), receptor_type=receptor_type)
+    else:
+        zero_polarity = []
+        for conn in connections:
+            zero_polarity.append([conn[0]-1, conn[1], conn[2], conn[3]])
+        p.Projection(vis, post, p.FromListConnector(connections), receptor_type=receptor_type)
+        p.Projection(vis, post, p.FromListConnector(zero_polarity), receptor_type=receptor_type)
+
 x_res = 304
 y_res = 240
 
@@ -432,34 +523,39 @@ if __name__ == '__main__':
     # extract input data
     # dm = DataManager()
     # dm.load_AE_from_yarp('ATIS')
-    if simulate == 'square':
-        directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
-        events = generate_fake_stimuli(directions, 'square')
-    elif simulate == 'circle':
-        directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
-        events = generate_fake_stimuli(directions, 'circle')
-    elif simulate == 'sim_dir':
-        contrasts = ['high', 'medium', 'low']
-        locations = ['RL', 'LR', 'BT', 'TB']
-        combined_events = []
-        for contrast in contrasts:
-            print contrast, ':'
-            for location in locations:
-                print "\t", location
-                combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
-        events = combine_parsed_ATIS(combined_events)
+    if isinstance(simulate, str):
+        if simulate == 'square':
+            directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
+            events = generate_fake_stimuli(directions, 'square')
+        elif simulate == 'circle':
+            directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
+            events = generate_fake_stimuli(directions, 'circle')
+        elif simulate == 'sim_dir':
+            contrasts = ['high', 'medium', 'low']
+            locations = ['RL', 'LR', 'BT', 'TB']
+            combined_events = []
+            for contrast in contrasts:
+                print contrast, ':'
+                for location in locations:
+                    print "\t", location
+                    combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
+            events = combine_parsed_ATIS(combined_events)
+        else:
+            events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+        print "Events created"
+        runtime = 0
+        for neuron_id in range(len(events)):
+            for time in events[neuron_id]:
+                if time > runtime:
+                    runtime = time
+        runtime = int(np.ceil(runtime)) + 1000
+        print "running for", runtime, "ms"
+        p.setup(timestep=1.0)
+        vis_pop = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='pop_in')
     else:
-        events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
-    print "Events created"
-    runtime = 0
-    for neuron_id in range(len(events)):
-        for time in events[neuron_id]:
-            if time > runtime:
-                runtime = time
-    runtime = int(np.ceil(runtime)) + 1000
-    print "running for", runtime, "ms"
-    p.setup(timestep=1.0)
-    ATIS_events = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='ATIS_events')
+        print "running until enter is pressed"
+        p.setup(timestep=1.0)
+        vis_pop = p.Population(None, ICUBInputVertex(spinnaker_link_id=0), label='pop_in')
 
     # create boarder connections and populations
     boarder_connections = create_peripheral_mapping(base_weight=base_weight,
@@ -467,7 +563,8 @@ if __name__ == '__main__':
     boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
                                       label="boarder populations")
     boarder_population.record('all')
-    p.Projection(ATIS_events, boarder_population, p.FromListConnector(boarder_connections))
+    connect_vis_pop(vis_pop, boarder_population, boarder_connections)
+    # p.Projection(vis_pop, boarder_population, p.FromListConnector(boarder_connections))
 
     # create filters and connections from input video stream
     all_filter_segments = []
@@ -493,7 +590,8 @@ if __name__ == '__main__':
             filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
                                                    label='segments {} - {}'.format(filter, rotation)))
             # project events to neurons/filter segments
-            p.Projection(ATIS_events, filter_segments[-1], p.FromListConnector(segment_connection))
+            connect_vis_pop(vis_pop, filter_segments[-1], segment_connection)
+            # p.Projection(vis_pop, filter_segments[-1], p.FromListConnector(segment_connection))
             # connect segments into a single filter neuron
             filter_connections = create_filter_neuron_connections(filter_split=filter_split,
                                                                   no_neurons=no_neurons,
@@ -502,7 +600,8 @@ if __name__ == '__main__':
             filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
                                                       label='filter {} - {}'.format(filter, rotation)))
             if len(inhib_connection) != 0:
-                p.Projection(ATIS_events, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
+                connect_vis_pop(vis_pop, filter_populations[-1], inhib_connection, receptor_type='inhibitory')
+                # p.Projection(vis_pop, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
             p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
             filter_populations[-1].record('spikes')
             filter_segments[-1].record('spikes')
@@ -534,7 +633,12 @@ if __name__ == '__main__':
         print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
         for object in proto_object_pop:
             object.record('spikes')
-    p.run(runtime)
+    # p.run(runtime)
+    if isinstance(simulate, str):
+        p.run(runtime)
+    else:
+        p.external_devices.run_forever()
+        raw_input('Press enter to stop')
 
     print "saving"
     boarder_data = boarder_population.get_data()

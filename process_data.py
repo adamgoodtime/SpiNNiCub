@@ -149,11 +149,11 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
     binned_frames = [[[0 for y in range(y_res)] for x in range(x_res)] for i in range(int(np.ceil(max_time / frame_duration)))]
 
     # setup toolbar
-    # toolbar_width = 40
-    # print '[{}]'.format('-'*toolbar_width)
-    # sys.stdout.write("[%s]" % (" " * toolbar_width))
-    # sys.stdout.flush()
-    # sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
+    toolbar_width = 40
+    print '[{}]'.format('-'*toolbar_width)
+    sys.stdout.write("[%s]" % (" " * toolbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
     current_point = 0
     progression_count = 0
     for spike in list_data:
@@ -173,13 +173,12 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
                     if 0 <= new_x < x_res and 0 <= new_y < y_res:
                         binned_frames[time_index][new_x][new_y] += gaussian[i][j]
         progression_count += 1
-        print progression_count, '/', len(list_data)
-    #     if current_point < int(round((float(list_data.index(spike)) / float(len(list_data))) * float(toolbar_width))):
-    #         progression_list.append([float(list_data.index(spike)),  float(len(list_data))])
-    #         current_point = int(round((float(list_data.index(spike)) / float(len(list_data))) * float(toolbar_width)))
-    #         sys.stdout.write("-")
-    #         sys.stdout.flush()
-    # sys.stdout.write("]\n")
+        # print progression_count, '/', len(list_data)
+        if current_point < int(round((float(progression_count) / float(len(list_data))) * float(toolbar_width))):
+            current_point = int(round((float(progression_count) / float(len(list_data))) * float(toolbar_width)))
+            sys.stdout.write("-")
+            sys.stdout.flush()
+    sys.stdout.write("]\n")
 
     print 'creating images'
     xlim = 304
@@ -192,6 +191,7 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
     current_point = 0
+    progression_count = 0
     for frame in binned_frames:
         plt.imshow(frame, cmap='hot', interpolation='nearest')
         title = '{} - {}'.format(file_name, binned_frames.index(frame))
@@ -200,8 +200,9 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
         plt.savefig(file_location+'/videos/'+title, format='jpeg', bbox_inches='tight')
         # plt.show()
         plt.clf()
-        if current_point < int(round((float(binned_frames.index(frame)) / float(len(binned_frames))) * float(toolbar_width))):
-            current_point = int(round((float(binned_frames.index(frame)) / float(len(binned_frames))) * float(toolbar_width)))
+        progression_count += 1
+        if current_point < int(round((float(progression_count) / float(len(binned_frames))) * float(toolbar_width))):
+            current_point = int(round((float(progression_count) / float(len(binned_frames))) * float(toolbar_width)))
             sys.stdout.write("-")
             sys.stdout.flush()
     sys.stdout.write("]\n")
