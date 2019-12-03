@@ -727,7 +727,7 @@ if __name__ == '__main__':
         np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
 
     move_data = move_pop.get_data()
-    np.save('movement data.npy', move_data)
+    np.save('movement data {}.npy'.format(label), move_data)
     print "all saved"
 
     filter_segment_spikes = [0 for i in range(len(filter_sizes))]
@@ -775,8 +775,14 @@ if __name__ == '__main__':
             print location, all_spike_count[filter_size][location]
     np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
     print 'up = 0, down = 1, left = 2, right = 3'
+    direction_key = {'0': [1, 2], '1': [1, 0], '2': [0, 1], '3': [2, 1]}
+    move_spike_data = []
     for idx, neuron in enumerate(move_data.segments[0].spiketrains):
+        spike_times = neuron[0].magnitude
+        for spike_time in spike_times:
+            move_spike_data.append([direction_key['{}'.format(idx)][0], direction_key['{}'.format(idx)][1], spike_time])
         print 'direction: {} - spikes: {}'.format(idx, neuron.size)
+    np.save('extracted move spikes {}.npy'.format(move_spike_data))
 
     boarder_spikes = 0
     spikes = boarder_data.segments[0].spiketrains
