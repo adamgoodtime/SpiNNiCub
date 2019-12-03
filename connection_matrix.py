@@ -156,6 +156,14 @@ def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     return list_of_corners, x, y
 
 def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=False):
+    '''
+    0........w
+    w+1      w+2
+    .        .
+    .        .
+    .        .
+    w+2h.....2w+2h
+    '''
     max_blocks = 4 + horizontal_split + horizontal_split + veritcal_split + veritcal_split
     block_count = [0 for i in range(max_blocks)]
     pixel_mapping = []
@@ -476,12 +484,55 @@ def connect_vis_pop(vis, post, connections, receptor_type='excitatory'):
         p.Projection(vis, post, p.FromListConnector(connections), receptor_type=receptor_type)
         p.Projection(vis, post, p.FromListConnector(zero_polarity), receptor_type=receptor_type)
 
+def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, base_weight):
+    # up, down, left, right = 0, 1, 2, 3
+    move_pop = p.Population(4, p.IF_curr_exp(*neuron_params), label='movement_udlr')
+    boarder_movement_connections = []
+    for neuron in range(boarder.size):
+        # down
+        if neuron < 2 + horizontal_split:
+            boarder_movement_connections.append([neuron, 1, base_weight*boarder_weight_scale, 1])
+        # up
+        elif neuron >= 2 + horizontal_split + (2 * veritcal_split):
+            boarder_movement_connections.append([neuron, 0, base_weight*boarder_weight_scale, 1])
+        # left
+        elif (neuron - (2 + horizontal_split)) % 2 == 0 or neuron == 0 or neuron == 2 + horizontal_split + (2 * veritcal_split):
+            boarder_movement_connections.append([neuron, 2, base_weight*boarder_weight_scale, 1])
+        # right
+        elif (neuron - (2 + horizontal_split)) % 2 == 1 or neuron == 1 + veritcal_split or neuron == 3 + (2 * horizontal_split) + (2 * veritcal_split):
+            boarder_movement_connections.append([neuron, 3, base_weight*boarder_weight_scale, 1])
+    p.Projection(boarder, move_pop, p.FromListConnector(boarder_movement_connections))
+
+    for proto_size in proto:
+        for proto_object in proto_size:
+            split_data = proto_object.label.split('-')
+            x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+            if x < x_res / 2:
+                p.Projection(proto_object, move_pop, p.FromListConnector[0, 1, base_weight*boarder_weight_scale, 1])
+            if x >= x_res / 2:
+                p.Projection(proto_object, move_pop, p.FromListConnector[0, 0, base_weight*boarder_weight_scale, 1])
+            if y < y_res / 2:
+                p.Projection(proto_object, move_pop, p.FromListConnector[0, 2, base_weight*boarder_weight_scale, 1])
+            if y >= y_res / 2:
+                p.Projection(proto_object, move_pop, p.FromListConnector[0, 3, base_weight*boarder_weight_scale, 1])
+    # mutual inhibition
+    inhibit_list = []
+    for i in range(4):
+        for j in range(4):
+            if i != j:
+                inhibit_list.append([i, j, base_weight, 1])
+    p.Projection(move_pop, move_pop, p.FromListConnector(inhibit_list), receptor_type='inhibitory')
+    return move_pop
+
 x_res = 304
 y_res = 240
 
 if __name__ == '__main__':
-    fovea_x = 300
-    fovea_y = 236
+    # fovea_x = 300
+    # fovea_y = 236
+    # min for 1 board
+    fovea_x = 170
+    fovea_y = 135
     peripheral_x = (x_res - fovea_x) / 2
     peripheral_y = (y_res - fovea_y) / 2
     horizontal_split = 1
@@ -494,7 +545,8 @@ if __name__ == '__main__':
     # connection configurations: #
     ##############################
     # filter_sizes = [30, 46, 70, 100]
-    filter_sizes = [100, 70, 46, 30]
+    # filter_sizes = [100, 70, 46, 30]
+    filter_sizes = [46, 30]
     list_of_filter_sizes = []
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
@@ -560,10 +612,11 @@ if __name__ == '__main__':
 
     # create boarder connections and populations
     boarder_connections = create_peripheral_mapping(base_weight=base_weight,
-                                                    percentage_fire_threshold=boarder_percentage_fire_threshold)
+                                                    percentage_fire_threshold=boarder_percentage_fire_threshold,
+                                                    plot=False)
     boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
                                       label="boarder populations")
-    boarder_population.record('all')
+    boarder_population.record('spikes')
     connect_vis_pop(vis_pop, boarder_population, boarder_connections)
     # p.Projection(vis_pop, boarder_population, p.FromListConnector(boarder_connections))
 
@@ -634,6 +687,10 @@ if __name__ == '__main__':
         print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
         for object in proto_object_pop:
             object.record('spikes')
+
+    move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
+    move_pop.record('spikes')
+
     # p.run(runtime)
     if isinstance(simulate, str):
         p.run(runtime)
@@ -668,6 +725,9 @@ if __name__ == '__main__':
             object_data.append([object.get_data(), object.label])
         all_proto_object_data.append(object_data)
         np.save('proto object data {}-{}.npy'.format(filter_sizes[filter_size], label), object_data)
+
+    move_data = move_pop.get_data()
+    np.save('movement data.npy', move_data)
     print "all saved"
 
     filter_segment_spikes = [0 for i in range(len(filter_sizes))]
@@ -714,6 +774,9 @@ if __name__ == '__main__':
         for location in all_spike_count[filter_size]:
             print location, all_spike_count[filter_size][location]
     np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
+    print 'up = 0, down = 1, left = 2, right = 3'
+    for idx, neuron in enumerate(move_data.segments[0].spiketrains):
+        print 'direction: {} - spikes: {}'.format(idx, neuron.size)
 
     boarder_spikes = 0
     spikes = boarder_data.segments[0].spiketrains
