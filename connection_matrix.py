@@ -763,6 +763,7 @@ if __name__ == '__main__':
                     spike_times = spike_data[0].magnitude
                     x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
                     for spike_time in spike_times:
+                        print x, y, spike_time, filter_sizes[filter_idx]
                         coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
                         if '({}, {})'.format(x, y) in spike_count:
                             spike_count['({}, {})'.format(x, y)] += 1
@@ -780,11 +781,12 @@ if __name__ == '__main__':
     for idx, neuron in enumerate(move_data.segments[0].spiketrains):
         print 'direction: {} - spikes: {}'.format(idx, neuron.size)
         if neuron.size:
-            spike_times = neuron[0].magnitude
+            spike_times = move_data.segments[0].spiketrains[idx].magnitude
+            # spike_times = neuron.magnitude
             for spike_time in spike_times:
                 print idx, spike_time
                 move_spike_data.append([direction_key['{}'.format(idx)][0], direction_key['{}'.format(idx)][1], spike_time])
-    np.save('extracted move spikes {}.npy'.format(move_spike_data))
+    np.save('extracted move spikes {}.npy'.format(move_spike_data), move_spike_data)
 
     boarder_spikes = 0
     spikes = boarder_data.segments[0].spiketrains
