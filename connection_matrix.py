@@ -397,7 +397,7 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
         offset_y = (filter_height / 2.) * (1.-overlap)
     else:
         Exception
-    print filter_size, filter_x, filter_y, direction
+    # print filter_size, filter_x, filter_y, direction
     x = filter_x * (filter_width - (overlap * filter_width))
     x += offset_x + peripheral_x + (filter_width / 2.)
     y = filter_y * (filter_height - (overlap * filter_height))
@@ -779,8 +779,8 @@ if __name__ == '__main__':
     move_spike_data = []
     for idx, neuron in enumerate(move_data.segments[0].spiketrains):
         print 'direction: {} - spikes: {}'.format(idx, neuron.size)
-        spike_times = move_data[0].magnitude
         if neuron.size:
+            spike_times = neuron[0].magnitude
             for spike_time in spike_times:
                 print idx, spike_time
                 move_spike_data.append([direction_key['{}'.format(idx)][0], direction_key['{}'.format(idx)][1], spike_time])
