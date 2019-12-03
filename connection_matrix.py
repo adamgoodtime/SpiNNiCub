@@ -554,15 +554,15 @@ if __name__ == '__main__':
     overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.1
+    segment_percentage_fire_threshold = 0.04
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 1.
+    inhib_percentage_fire_threshold = 0.04
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-    # simulate = 'sim_dir'
-    simulate = None
+    simulate = 'sim_dir'
+    # simulate = None
 
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
                                                                                            base_weight,
