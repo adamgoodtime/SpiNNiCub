@@ -516,12 +516,12 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
             if y >= y_res / 2:
                 p.Projection(proto_object, move_pop, p.FromListConnector([[0, 3, base_weight*boarder_weight_scale, 1]]))
     # mutual inhibition
-    inhibit_list = []
-    for i in range(4):
-        for j in range(4):
-            if i != j:
-                inhibit_list.append([i, j, base_weight, 1])
-    p.Projection(move_pop, move_pop, p.FromListConnector(inhibit_list), receptor_type='inhibitory')
+    # inhibit_list = []
+    # for i in range(4):
+    #     for j in range(4):
+    #         if i != j:
+    #             inhibit_list.append([i, j, base_weight, 1])
+    # p.Projection(move_pop, move_pop, p.FromListConnector(inhibit_list), receptor_type='inhibitory')
     return move_pop
 
 x_res = 304
@@ -564,7 +564,7 @@ if __name__ == '__main__':
     simulate = 'sim_dir'
     # simulate = None
 
-    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+    label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
                                                                                            base_weight,
                                                                                            boarder_percentage_fire_threshold,
                                                                                            segment_percentage_fire_threshold,
