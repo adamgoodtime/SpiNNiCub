@@ -4,6 +4,8 @@ import numpy as np
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import os
+from os.path import join, getsize
 import warnings
 import spynnaker8 as p
 from ATIS.decode_events import *
@@ -423,15 +425,38 @@ def combine_parsed_ATIS(event_list):
     time_offset = 0
     max_time = 0
     events = [[] for i in range(x_res*y_res)]
-    for direction in event_list:
-        for neuron_id in range(len(direction)):
-            for time in range(len(direction[neuron_id])):
-                new_time = direction[neuron_id][time] + time_offset
+    for data_set in event_list:
+        print 'combining', event_list.index(data_set) + 1, '/', len(event_list)
+        for neuron_id in range(len(data_set)):
+            for time in range(len(data_set[neuron_id])):
+                new_time = data_set[neuron_id][time] + time_offset
                 events[neuron_id].append(new_time)
                 if new_time > max_time:
                     max_time = new_time
         time_offset = max_time
+    print 'maximum time after combining was', np.ceil(max_time)
     return events
+
+def gather_all_ATIS_log(top_directory):
+    # dm = DataManager()
+    all_directories = []
+    for root, dirs, files in os.walk(top_directory):
+        # if 'data.log' in files:
+        #     print root
+        #     print 'data.log size:', getsize(join(root, 'data.log'))
+        #     if getsize(join(root, 'data.log')):
+        #         dm.load_AE_from_yarp(root)
+        # for file in files:
+        #     if file != 'data.log':
+        #         os.remove(root+'/'+file)
+        if 'decoded_events.txt' in files:
+            # print root
+            # print 'data.log size:', getsize(join(root, 'data.log')), 'and events.txt:', getsize(join(root, 'decoded_events.txt'))
+            # dm.load_AE_from_yarp('{}/{}'.format(file_location, location))
+            all_directories.append(root)
+        if 'PYTHON' in dirs:
+            dirs.remove('PYTHON')
+    return all_directories
 
 def generate_fake_stimuli(directions, stimulus):
     all_on = []
@@ -561,7 +586,7 @@ if __name__ == '__main__':
     proto_scale = 0.75
     inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-    simulate = 'sim_dir'
+    simulate = 'all_ATIS'
     # simulate = None
 
     label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
@@ -580,6 +605,13 @@ if __name__ == '__main__':
         if simulate == 'square':
             directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
             events = generate_fake_stimuli(directions, 'square')
+        elif simulate == 'all_ATIS':
+            all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
+            combined_events = []
+            for directory in all_directories:
+                print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+                combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
+            events = combine_parsed_ATIS(combined_events)
         elif simulate == 'circle':
             directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
             events = generate_fake_stimuli(directions, 'circle')

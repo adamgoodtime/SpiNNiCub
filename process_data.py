@@ -305,14 +305,14 @@ if __name__ == '__main__':
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
 
 sfts = [0.04, 0.02]
-bfts = [0.2, 0.05]
+bfts = [0.005, 0.05]
 
 for sft in sfts:
     for bft in bfts:
         print "current value:", sft, bft
         segment_percentage_fire_threshold = sft
         boarder_percentage_fire_threshold = bft
-        label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+        label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
                                                                                                base_weight,
                                                                                                boarder_percentage_fire_threshold,
                                                                                                segment_percentage_fire_threshold,
