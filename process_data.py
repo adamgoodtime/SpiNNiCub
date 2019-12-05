@@ -1,5 +1,9 @@
 
-
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 import numpy as np
 from scipy.stats import norm
 from mpl_toolkits.mplot3d import Axes3D
@@ -7,11 +11,6 @@ import warnings
 import spynnaker8 as p
 from ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
-import os
-import matplotlib as mpl
-if os.environ.get('DISPLAY', '') == '':
-    print('no display found. Using non-interactive Agg backend')
-    mpl.use('Agg')
 import matplotlib.pyplot as plt
 import imageio
 from scipy.stats import multivariate_normal
@@ -307,33 +306,35 @@ if __name__ == '__main__':
    #  events = combine_parsed_ATIS(combined_events)
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
-    all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
-    combined_events = []
-    for directory in all_directories:
-        print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
-        combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
-    events = combine_parsed_ATIS(combined_events)
-    spikes = parse_events_to_spike_times(events)
-    create_video('run_data', 'All ATIS input spikes', 2, spikes=spikes)
+    raw = True
+    if raw:
+        all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
+        combined_events = []
+        for directory in all_directories:
+            print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+            combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
+        events = combine_parsed_ATIS(combined_events)
+        spikes = parse_events_to_spike_times(events)
+        create_video('run_data', 'All ATIS input spikes', 2, spikes=spikes)
+    else:
+        sfts = [0.04, 0.02]
+        bfts = [0.005, 0.05]
 
-    sfts = [0.04, 0.02]
-    bfts = [0.005, 0.05]
-
-    for sft in sfts:
-        for bft in bfts:
-            print "current value:", sft, bft
-            segment_percentage_fire_threshold = sft
-            boarder_percentage_fire_threshold = bft
-            label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                                   base_weight,
-                                                                                                   boarder_percentage_fire_threshold,
-                                                                                                   segment_percentage_fire_threshold,
-                                                                                                   filter_percentage_fire_threshold,
-                                                                                                   inhib_percentage_fire_threshold,
-                                                                                                   inhib_connect_prob, proto_scale,
-                                                                                                   inhib, filter_sizes)
-            create_video("run_data", label, 2)
-            process_movement("run_data", label, 2)
+        for sft in sfts:
+            for bft in bfts:
+                print "current value:", sft, bft
+                segment_percentage_fire_threshold = sft
+                boarder_percentage_fire_threshold = bft
+                label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
+                                                                                                       base_weight,
+                                                                                                       boarder_percentage_fire_threshold,
+                                                                                                       segment_percentage_fire_threshold,
+                                                                                                       filter_percentage_fire_threshold,
+                                                                                                       inhib_percentage_fire_threshold,
+                                                                                                       inhib_connect_prob, proto_scale,
+                                                                                                       inhib, filter_sizes)
+                create_video("run_data", label, 2)
+                process_movement("run_data", label, 2)
 
 # inhib_percentage_fire_threshold = 0.1
 # values = [0.08, 0.06, 0.04, 0.02]
