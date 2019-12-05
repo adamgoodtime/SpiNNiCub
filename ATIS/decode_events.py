@@ -57,7 +57,10 @@ class DataManager:
         data[:, 1] >>= 1
         x = data[:, 1] & 0x1FF
 
-        data[:, 1] >>= 11
+        if old_codec:
+            data[:, 1] >>= 9
+        else:
+            data[:, 1] >>= 11
         y = data[:, 1] & 0xFF
 
         data[:, 1] >>= 10
@@ -149,14 +152,16 @@ class DataManager:
         AE_to_save[:, 0] = (AE_to_save[:, 0] - AE_to_save[0, 0]) * 80e-9  # 80ns to normalize w.r.t. the clock
         np.savetxt(os.path.join(AE_file_path, 'decoded_events.txt'), AE_to_save, delimiter=',', fmt=['%f', '%d', '%d', '%d', '%d', '%d', '%d', '%d'])     # SPECIFY THE FORMAT OF THE DATA
 
-
+old_codec = True
 
 if __name__ == '__main__':
 
     
     dm = DataManager()
-    file_location = 'medium'
-    locations = ['RL', 'LR', 'BT', 'TB']
-    for location in locations:
-        dm.load_AE_from_yarp('{}/{}'.format(file_location, location))
+    dm.load_AE_from_yarp('IROS_attention/calib_circles/ATIS/')
+    # file_location = 'medium'
+    # locations = ['RL', 'LR', 'BT', 'TB']
+    #
+    # for location in locations:
+    #     dm.load_AE_from_yarp('{}/{}'.format(file_location, location))
 

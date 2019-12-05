@@ -5,6 +5,7 @@ from scipy.stats import norm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import os
+import shutil
 from os.path import join, getsize
 import warnings
 import spynnaker8 as p
@@ -438,9 +439,9 @@ def combine_parsed_ATIS(event_list):
     return events
 
 def gather_all_ATIS_log(top_directory):
-    # dm = DataManager()
     all_directories = []
     for root, dirs, files in os.walk(top_directory):
+        # dm = DataManager()
         # if 'data.log' in files:
         #     print root
         #     print 'data.log size:', getsize(join(root, 'data.log'))
@@ -449,13 +450,13 @@ def gather_all_ATIS_log(top_directory):
         # for file in files:
         #     if file != 'data.log':
         #         os.remove(root+'/'+file)
+        # if 'PYTHON' in dirs:
+        #     shutil.rmtree(root+'/'+'PYTHON')
+        #     dirs.remove('PYTHON')
         if 'decoded_events.txt' in files:
             # print root
             # print 'data.log size:', getsize(join(root, 'data.log')), 'and events.txt:', getsize(join(root, 'decoded_events.txt'))
-            # dm.load_AE_from_yarp('{}/{}'.format(file_location, location))
             all_directories.append(root)
-        if 'PYTHON' in dirs:
-            dirs.remove('PYTHON')
     return all_directories
 
 def generate_fake_stimuli(directions, stimulus):
@@ -551,6 +552,8 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
 
 x_res = 304
 y_res = 240
+
+simulate = 'real'
 
 if __name__ == '__main__':
     # fovea_x = 300
@@ -814,7 +817,7 @@ if __name__ == '__main__':
         if neuron.size:
             spike_times = neuron.magnitude
             for spike_time in spike_times:
-                print idx, spike_time
+                # print idx, spike_time
                 move_spike_data.append([direction_key['{}'.format(idx)][0], direction_key['{}'.format(idx)][1], spike_time])
     np.save('extracted move spikes {}.npy'.format(label), move_spike_data)
 

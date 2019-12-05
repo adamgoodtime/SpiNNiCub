@@ -2,12 +2,16 @@
 
 import numpy as np
 from scipy.stats import norm
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import warnings
 import spynnaker8 as p
 from ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY', '') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 import matplotlib.pyplot as plt
 import imageio
 from scipy.stats import multivariate_normal
