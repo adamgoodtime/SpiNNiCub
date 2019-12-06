@@ -448,11 +448,14 @@ def gather_all_ATIS_log(top_directory):
         #     if getsize(join(root, 'data.log')):
         #         dm.load_AE_from_yarp(root)
         # for file in files:
-        #     if file != 'data.log':
-        #         os.remove(root+'/'+file)
-        # if 'PYTHON' in dirs:
-        #     shutil.rmtree(root+'/'+'PYTHON')
-        #     dirs.remove('PYTHON')
+            # if file != 'data.log' and file != 'events.gif' and file != 'decoded_events.txt':
+            #     os.remove(root+'/'+file)
+            # if file == 'events.gif' and 'videos' in root:
+            #     shutil.move(root+'/'+file, root.replace('videos', '')+'events.gif')
+
+        # if 'videos' in dirs:
+        #     shutil.rmtree(root+'/'+'videos')
+        #     dirs.remove('videos')
         if 'decoded_events.txt' in files:
             # print root
             # print 'data.log size:', getsize(join(root, 'data.log')), 'and events.txt:', getsize(join(root, 'decoded_events.txt'))
@@ -556,11 +559,11 @@ y_res = 240
 simulate = 'real'
 
 if __name__ == '__main__':
-    # fovea_x = 300
-    # fovea_y = 236
+    fovea_x = 300
+    fovea_y = 236
     # min for 1 board
-    fovea_x = 170
-    fovea_y = 135
+    # fovea_x = 170
+    # fovea_y = 135
     peripheral_x = (x_res - fovea_x) / 2
     peripheral_y = (y_res - fovea_y) / 2
     horizontal_split = 1
@@ -573,8 +576,9 @@ if __name__ == '__main__':
     # connection configurations: #
     ##############################
     # filter_sizes = [30, 46, 70, 100]
-    # filter_sizes = [100, 70, 46, 30]
-    filter_sizes = [46, 30]
+    filter_sizes = [100, 70, 46, 30]
+    # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
+    # filter_sizes = [46, 30]
     list_of_filter_sizes = []
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
@@ -582,14 +586,14 @@ if __name__ == '__main__':
     overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.04
+    segment_percentage_fire_threshold = 0.02
     filter_percentage_fire_threshold = 0.8
     inhib_percentage_fire_threshold = 0.04
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
-    simulate = 'all_ATIS'
+    simulate = 'subset'
     # simulate = None
 
     label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
@@ -608,13 +612,8 @@ if __name__ == '__main__':
         if simulate == 'square':
             directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
             events = generate_fake_stimuli(directions, 'square')
-        elif simulate == 'all_ATIS':
-            all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
-            combined_events = []
-            for directory in all_directories:
-                print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
-                combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
-            events = combine_parsed_ATIS(combined_events)
+        elif simulate == 'basic':
+            events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
         elif simulate == 'circle':
             directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
             events = generate_fake_stimuli(directions, 'circle')
@@ -629,7 +628,20 @@ if __name__ == '__main__':
                     combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
         else:
-            events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+            if simulate == 'all_ATIS':
+                all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
+            elif simulate == 'subset':
+                all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
+            elif simulate == 'proto':
+                all_directories = gather_all_ATIS_log('ATIS/(no)proto_object')
+            else:
+                print "incorrect stimulus setting"
+                Exception
+            combined_events = []
+            for directory in all_directories:
+                print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+                combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
+            events = combine_parsed_ATIS(combined_events)
         print "Events created"
         runtime = 0
         for neuron_id in range(len(events)):

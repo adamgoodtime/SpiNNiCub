@@ -165,7 +165,7 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
-    imageio.mimsave(file_location+'/videos/proto '+file_name+'.gif', images)
+    imageio.mimsave(file_location+'/videos/'+file_name+'.gif', images)
 
     # with imageio.get_writer('/path/to/movie.gif', mode='I') as writer:
     #     for filename in filenames:
@@ -306,8 +306,9 @@ if __name__ == '__main__':
    #  events = combine_parsed_ATIS(combined_events)
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
-    raw = True
-    if raw:
+
+    video_of = 'solo_raw'
+    if video_of == 'raw':
         all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
         combined_events = []
         for directory in all_directories:
@@ -316,15 +317,28 @@ if __name__ == '__main__':
         events = combine_parsed_ATIS(combined_events)
         spikes = parse_events_to_spike_times(events)
         create_video('run_data', 'All ATIS input spikes', 2, spikes=spikes)
+    elif video_of == 'solo_raw':
+        all_directories = []
+        for root, dirs, files in os.walk('ATIS'):
+            if 'decoded_events.txt' in files:
+                print root
+                events = parse_ATIS(root, 'decoded_events.txt')
+                spikes = parse_events_to_spike_times(events)
+                if 'videos' not in dirs:
+                    os.mkdir(root+'/videos')
+                create_video(root, 'events', 2, spikes=spikes)
     else:
         sfts = [0.04, 0.02]
         bfts = [0.005, 0.05]
+        ifts = [0.02, 0.03, 0.04]
+        fsizess = [[100, 90, 80, 70, 60, 50, 40, 30, 20], [100, 90, 80, 70, 60, 50, 40, 30, 20]]
 
         for sft in sfts:
             for bft in bfts:
                 print "current value:", sft, bft
                 segment_percentage_fire_threshold = sft
                 boarder_percentage_fire_threshold = bft
+                # inhib_percentage_fire_threshold = ift
                 label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
                                                                                                        base_weight,
                                                                                                        boarder_percentage_fire_threshold,
