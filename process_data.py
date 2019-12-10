@@ -167,8 +167,8 @@ def create_video(file_location, file_name, frame_rate, spikes=[]):
         images.append(imageio.imread(filename))
     imageio.mimsave(file_location+'/videos/'+file_name+'.gif', images)
 
-    for file in filenames:
-        os.remove(file)
+    # for file in filenames:
+    #     os.remove(file)
 
     # with imageio.get_writer('/path/to/movie.gif', mode='I') as writer:
     #     for filename in filenames:
@@ -257,8 +257,8 @@ def process_movement(file_location, file_name, frame_rate):
         images.append(imageio.imread(filename))
     imageio.mimsave(file_location+'/videos/movement '+file_name+'.gif', images)
 
-    for file in filenames:
-        os.remove(file)
+    # for file in filenames:
+    #     os.remove(file)
 
 if __name__ == '__main__':
     x_res = 304
@@ -320,7 +320,7 @@ if __name__ == '__main__':
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
 
-    video_of = 'solo_raw'
+    video_of = 'not solo'
     if video_of == 'raw':
         all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
         combined_events = []
@@ -377,7 +377,7 @@ if __name__ == '__main__':
         else:
             label += ' {}'.format(filter_sizes)
         create_video("run_data", label, 2)
-        process_movement("run_data", label, 2)
+        # process_movement("run_data", label, 2)
     else:
         sfts = [0.04, 0.02]
         bfts = [0.005, 0.05]
@@ -399,7 +399,7 @@ if __name__ == '__main__':
                                                                                                        inhib_connect_prob, proto_scale,
                                                                                                        inhib, filter_sizes)
                 create_video("run_data", label, 2)
-                process_movement("run_data", label, 2)
+                # process_movement("run_data", label, 2)
 
 # inhib_percentage_fire_threshold = 0.1
 # values = [0.08, 0.06, 0.04, 0.02]
