@@ -382,22 +382,33 @@ if __name__ == '__main__':
         sfts = [0.04, 0.02]
         bfts = [0.005, 0.05]
         ifts = [0.02, 0.03, 0.04]
+        to_wtas = [1., 0.1, 0.01]
+        from_wtas = [1., 0.1, 0.01]
         fsizess = [[100, 90, 80, 70, 60, 50, 40, 30, 20], [100, 90, 80, 70, 60, 50, 40, 30, 20]]
 
-        for sft in sfts:
-            for bft in bfts:
-                print "current value:", sft, bft
-                segment_percentage_fire_threshold = sft
-                boarder_percentage_fire_threshold = bft
+        # for sft in sfts:
+        #     for bft in bfts:
+        for to_w in to_wtas:
+            for from_w in from_wtas:
+                # print "current value:", sft, bft
+                print "current value:", to_w, from_w
+                # segment_percentage_fire_threshold = sft
+                # boarder_percentage_fire_threshold = bft
                 # inhib_percentage_fire_threshold = ift
-                label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                                       base_weight,
-                                                                                                       boarder_percentage_fire_threshold,
-                                                                                                       segment_percentage_fire_threshold,
-                                                                                                       filter_percentage_fire_threshold,
-                                                                                                       inhib_percentage_fire_threshold,
-                                                                                                       inhib_connect_prob, proto_scale,
-                                                                                                       inhib, filter_sizes)
+                to_wta = to_w
+                from_wtas = from_w
+                label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+                                                                                                    base_weight,
+                                                                                                    boarder_percentage_fire_threshold,
+                                                                                                    segment_percentage_fire_threshold,
+                                                                                                    filter_percentage_fire_threshold,
+                                                                                                    inhib_percentage_fire_threshold,
+                                                                                                    inhib_connect_prob, proto_scale,
+                                                                                                    inhib)
+                if WTA:
+                    label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
+                else:
+                    label += ' {}'.format(filter_sizes)
                 create_video("run_data", label, 2)
                 # process_movement("run_data", label, 2)
 
