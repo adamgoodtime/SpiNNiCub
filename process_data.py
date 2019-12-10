@@ -271,7 +271,7 @@ if __name__ == '__main__':
     veritcal_split = 1
 
     # connection configurations:
-    filter_sizes = [46, 30]
+    filter_sizes = [100, 70, 55, 40]
     list_of_filter_sizes = []
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
@@ -279,24 +279,31 @@ if __name__ == '__main__':
     overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.04
+    segment_percentage_fire_threshold = 0.02
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.04
+    inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = False  # [0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    WTA = True
+    to_wta = 1.
+    from_wta = 1.
+    self_excite = 0.01
 
-    simulate = 'sim_dir'
-
-    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                           base_weight,
-                                                                                           boarder_percentage_fire_threshold,
-                                                                                           segment_percentage_fire_threshold,
-                                                                                           filter_percentage_fire_threshold,
-                                                                                           inhib_percentage_fire_threshold,
-                                                                                           inhib_connect_prob, proto_scale,
-                                                                                           inhib, filter_sizes)
-
+    simulate = 'subset'
+    # simulate = None
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+                                                                                        base_weight,
+                                                                                        boarder_percentage_fire_threshold,
+                                                                                        segment_percentage_fire_threshold,
+                                                                                        filter_percentage_fire_threshold,
+                                                                                        inhib_percentage_fire_threshold,
+                                                                                        inhib_connect_prob, proto_scale,
+                                                                                        inhib)
+    if WTA:
+        label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
+    else:
+        label += ' {}'.format(filter_sizes)
     # create_video("run_data", label, 2)
     # process_movement("run_data", label, 2)
 
@@ -342,23 +349,33 @@ if __name__ == '__main__':
         overlap = 0.6
         base_weight = 5.
         boarder_percentage_fire_threshold = 0.2
-        segment_percentage_fire_threshold = 0.04
+        segment_percentage_fire_threshold = 0.02
         filter_percentage_fire_threshold = 0.8
-        inhib_percentage_fire_threshold = 0.04
+        inhib_percentage_fire_threshold = 0.02
         inhib_connect_prob = 1.
         proto_scale = 0.75
-        inhib = False
-        label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate,
-                                                                                                   filter_split,
-                                                                                                   overlap,
-                                                                                                   base_weight,
-                                                                                                   boarder_percentage_fire_threshold,
-                                                                                                   segment_percentage_fire_threshold,
-                                                                                                   filter_percentage_fire_threshold,
-                                                                                                   inhib_percentage_fire_threshold,
-                                                                                                   inhib_connect_prob,
-                                                                                                   proto_scale,
-                                                                                                   inhib, filter_sizes)
+        inhib = False  # [0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+        WTA = True
+        to_wta = 1.
+        from_wta = 1.
+        self_excite = 0.01
+
+        simulate = 'subset'
+        # simulate = None
+        label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split,
+                                                                                            overlap,
+                                                                                            base_weight,
+                                                                                            boarder_percentage_fire_threshold,
+                                                                                            segment_percentage_fire_threshold,
+                                                                                            filter_percentage_fire_threshold,
+                                                                                            inhib_percentage_fire_threshold,
+                                                                                            inhib_connect_prob,
+                                                                                            proto_scale,
+                                                                                            inhib)
+        if WTA:
+            label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
+        else:
+            label += ' {}'.format(filter_sizes)
         create_video("run_data", label, 2)
         process_movement("run_data", label, 2)
     else:

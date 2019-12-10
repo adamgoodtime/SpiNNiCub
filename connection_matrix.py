@@ -591,19 +591,27 @@ if __name__ == '__main__':
     inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
     proto_scale = 0.75
-    inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    WTA = True
+    to_wta = 1.
+    from_wta = 1.
+    self_excite = 0.
 
     simulate = 'subset'
     # simulate = None
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+                                                                                       base_weight,
+                                                                                       boarder_percentage_fire_threshold,
+                                                                                       segment_percentage_fire_threshold,
+                                                                                       filter_percentage_fire_threshold,
+                                                                                       inhib_percentage_fire_threshold,
+                                                                                       inhib_connect_prob, proto_scale,
+                                                                                       inhib)
+    if WTA:
+        label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
+    else:
+        label += ' {}'.format(filter_sizes)
 
-    label = "{} nim fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{} {}".format(simulate, filter_split, overlap,
-                                                                                           base_weight,
-                                                                                           boarder_percentage_fire_threshold,
-                                                                                           segment_percentage_fire_threshold,
-                                                                                           filter_percentage_fire_threshold,
-                                                                                           inhib_percentage_fire_threshold,
-                                                                                           inhib_connect_prob, proto_scale,
-                                                                                           inhib, filter_sizes)
     print "\nCreating events for", label
     # extract input data
     # dm = DataManager()
@@ -738,11 +746,20 @@ if __name__ == '__main__':
                                  p.StaticSynapse(weight=base_weight, delay=1),
                                  receptor_type='inhibitory')
 
+    if WTA:
+        wta_neuron = p.Population(1, p.IF_curr_exp(*neuron_params), label='WTA')
 
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
+        to_wta_scale = float(len(proto_object_pop))
+        from_wta_scale = float(len(proto_object_pop))
         print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
         for object in proto_object_pop:
             object.record('spikes')
+            if WTA:
+                p.Projection(object, wta_neuron, p.FromListConnector([[0, 0, base_weight * (to_wta / to_wta_scale), 1]]), receptor_type='excitatory')
+                p.Projection(wta_neuron, object, p.FromListConnector([[0, 0, base_weight * (from_wta / to_wta_scale), 1]]), receptor_type='inhibitory')
+            if self_excite:
+                p.Projection(object, object, p.FromListConnector([[0, 0, base_weight * self_excite, 1]]))
 
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
     move_pop.record('spikes')
