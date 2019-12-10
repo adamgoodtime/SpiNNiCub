@@ -576,7 +576,7 @@ if __name__ == '__main__':
     # connection configurations: #
     ##############################
     # filter_sizes = [30, 46, 70, 100]
-    filter_sizes = [100, 70, 46, 30]
+    filter_sizes = [100, 70, 55, 40]
     # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
     # filter_sizes = [46, 30]
     list_of_filter_sizes = []
@@ -588,10 +588,10 @@ if __name__ == '__main__':
     boarder_percentage_fire_threshold = 0.2
     segment_percentage_fire_threshold = 0.02
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.04
+    inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
     proto_scale = 0.75
-    inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
 
     simulate = 'subset'
     # simulate = None
@@ -719,15 +719,24 @@ if __name__ == '__main__':
         all_filter_populations.append(filter_populations)
         # opposite inhibition for filter segments
         if inhib:
-            for rotation in range(4):
-                p.Projection(filter_populations[rotation], filter_populations[rotation+4],
-                             p.OneToOneConnector(),
-                             p.StaticSynapse(weight=base_weight, delay=1),
-                             receptor_type='inhibitory')
-                p.Projection(filter_populations[rotation+4], filter_populations[rotation],
-                             p.OneToOneConnector(),
-                             p.StaticSynapse(weight=base_weight, delay=1),
-                             receptor_type='inhibitory')
+            if inhib == 'all':
+                for rotation1 in range(8):
+                    for rotation2 in range(8):
+                        if rotation1 != rotation2:
+                            p.Projection(filter_populations[rotation1], filter_populations[rotation2],
+                                         p.OneToOneConnector(),
+                                         p.StaticSynapse(weight=base_weight, delay=1),
+                                         receptor_type='inhibitory')
+            else:
+                for rotation in range(4):
+                    p.Projection(filter_populations[rotation], filter_populations[rotation+4],
+                                 p.OneToOneConnector(),
+                                 p.StaticSynapse(weight=base_weight, delay=1),
+                                 receptor_type='inhibitory')
+                    p.Projection(filter_populations[rotation+4], filter_populations[rotation],
+                                 p.OneToOneConnector(),
+                                 p.StaticSynapse(weight=base_weight, delay=1),
+                                 receptor_type='inhibitory')
 
 
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
