@@ -301,9 +301,10 @@ if __name__ == '__main__':
                                                                                         inhib_connect_prob, proto_scale,
                                                                                         inhib)
     if WTA:
-        label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
-    else:
-        label += ' {}'.format(filter_sizes)
+        label += ' to-{} from-{}'.format(to_wta, from_wta)
+    if self_excite:
+        label += ' self-{}'.format(self_excite)
+    label += ' {}'.format(filter_sizes)
     # create_video("run_data", label, 2)
     # process_movement("run_data", label, 2)
 
@@ -373,9 +374,10 @@ if __name__ == '__main__':
                                                                                             proto_scale,
                                                                                             inhib)
         if WTA:
-            label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
-        else:
-            label += ' {}'.format(filter_sizes)
+            label += ' to-{} from-{}'.format(to_wta, from_wta)
+        if self_excite:
+            label += ' self-{}'.format(self_excite)
+        label += ' {}'.format(filter_sizes)
         create_video("run_data", label, 2)
         # process_movement("run_data", label, 2)
     else:
@@ -385,28 +387,36 @@ if __name__ == '__main__':
         to_wtas = [1., 0.1, 0.01]
         from_wtas = [1., 0.1, 0.01]
         fsizess = [[100, 90, 80, 70, 60, 50, 40, 30, 20], [100, 90, 80, 70, 60, 50, 40, 30, 20]]
+        to_and_from = [0, 10, 100]
 
         # for sft in sfts:
         #     for bft in bfts:
         for to_w in to_wtas:
             for from_w in from_wtas:
+            # for to_from in to_and_from:
+            #     to_wta = to_from
+            #     from_wta = to_from
                 # segment_percentage_fire_threshold = sft
                 # boarder_percentage_fire_threshold = bft
                 # inhib_percentage_fire_threshold = ift
                 to_wta = to_w
                 from_wta = from_w
-                label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+                label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate,
+                                                                                                    filter_split,
+                                                                                                    overlap,
                                                                                                     base_weight,
                                                                                                     boarder_percentage_fire_threshold,
                                                                                                     segment_percentage_fire_threshold,
                                                                                                     filter_percentage_fire_threshold,
                                                                                                     inhib_percentage_fire_threshold,
-                                                                                                    inhib_connect_prob, proto_scale,
+                                                                                                    inhib_connect_prob,
+                                                                                                    proto_scale,
                                                                                                     inhib)
                 if WTA:
-                    label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
-                else:
-                    label += ' {}'.format(filter_sizes)
+                    label += ' to-{} from-{}'.format(to_wta, from_wta)
+                if self_excite:
+                    label += ' self-{}'.format(self_excite)
+                label += ' {}'.format(filter_sizes)
                 print label
                 create_video("run_data", label, 2)
                 # process_movement("run_data", label, 2)

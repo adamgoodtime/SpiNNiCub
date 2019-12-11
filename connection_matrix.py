@@ -592,9 +592,9 @@ if __name__ == '__main__':
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
-    WTA = True
-    to_wta = 1.
-    from_wta = 1.
+    WTA = False
+    to_wta = 10.
+    from_wta = 10.
     self_excite = 0.
 
     simulate = 'subset'
@@ -608,9 +608,10 @@ if __name__ == '__main__':
                                                                                        inhib_connect_prob, proto_scale,
                                                                                        inhib)
     if WTA:
-        label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
-    else:
-        label += ' {}'.format(filter_sizes)
+        label += ' to-{} from-{}'.format(to_wta, from_wta)
+    if self_excite:
+        label += ' self-{}'.format(self_excite)
+    label += ' {}'.format(filter_sizes)
 
     print "\nCreating events for", label
     # extract input data
