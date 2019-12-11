@@ -390,13 +390,11 @@ if __name__ == '__main__':
         #     for bft in bfts:
         for to_w in to_wtas:
             for from_w in from_wtas:
-                # print "current value:", sft, bft
-                print "current value:", to_w, from_w
                 # segment_percentage_fire_threshold = sft
                 # boarder_percentage_fire_threshold = bft
                 # inhib_percentage_fire_threshold = ift
                 to_wta = to_w
-                from_wtas = from_w
+                from_wta = from_w
                 label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                                     base_weight,
                                                                                                     boarder_percentage_fire_threshold,
@@ -409,6 +407,7 @@ if __name__ == '__main__':
                     label += ' to-{} from-{} self-{} {}'.format(to_wta, from_wta, self_excite, filter_sizes)
                 else:
                     label += ' {}'.format(filter_sizes)
+                print label
                 create_video("run_data", label, 2)
                 # process_movement("run_data", label, 2)
 

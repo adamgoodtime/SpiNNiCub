@@ -748,10 +748,12 @@ if __name__ == '__main__':
 
     if WTA:
         wta_neuron = p.Population(1, p.IF_curr_exp(*neuron_params), label='WTA')
+        wta_neuron.record('spikes')
 
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
         to_wta_scale = float(len(proto_object_pop))
         from_wta_scale = float(len(proto_object_pop))
+        print 'to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale)
         print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
         for object in proto_object_pop:
             object.record('spikes')
@@ -874,6 +876,9 @@ if __name__ == '__main__':
                                    filter_segment_spikes[idx],
                                    filter_pop_spikes[idx],
                                    object_spikes[idx])
+
+    wta_spikes = wta_neuron.get_data()
+    print 'wta_spikes:', wta_spikes.segments[0].spiketrains.size
 
     #
     # Plot
