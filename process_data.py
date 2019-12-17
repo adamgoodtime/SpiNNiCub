@@ -341,7 +341,7 @@ if __name__ == '__main__':
                 if 'videos' not in dirs:
                     os.mkdir(root+'/videos')
                 create_video(root, 'events', 2, spikes=spikes)
-    elif simulate == 'solo':
+    elif video_of == 'solo':
         filter_sizes = [100, 70, 46, 30]
         list_of_filter_sizes = []
         for filter_size in filter_sizes:
@@ -378,6 +378,7 @@ if __name__ == '__main__':
         if self_excite:
             label += ' self-{}'.format(self_excite)
         label += ' {}'.format(filter_sizes)
+        print label
         create_video("run_data", label, 2)
         # process_movement("run_data", label, 2)
     else:

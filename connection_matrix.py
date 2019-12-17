@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import os
 import shutil
 from os.path import join, getsize
+import yarp
 import warnings
 import spynnaker8 as p
 from ATIS.decode_events import *
@@ -672,7 +673,8 @@ if __name__ == '__main__':
                                                     plot=False)
     boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
                                       label="boarder populations")
-    boarder_population.record('spikes')
+    if not isinstance(simulate, str):
+        boarder_population.record('spikes')
     connect_vis_pop(vis_pop, boarder_population, boarder_connections)
     # p.Projection(vis_pop, boarder_population, p.FromListConnector(boarder_connections))
 
@@ -713,8 +715,9 @@ if __name__ == '__main__':
                 connect_vis_pop(vis_pop, filter_populations[-1], inhib_connection, receptor_type='inhibitory')
                 # p.Projection(vis_pop, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
             p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
-            filter_populations[-1].record('spikes')
-            filter_segments[-1].record('spikes')
+            if not isinstance(simulate, str):
+                filter_populations[-1].record('spikes')
+                filter_segments[-1].record('spikes')
             print "number of neurons in segments = ", no_neurons
             print "number of neurons in filters = ", (no_neurons/filter_split)
             print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
@@ -749,7 +752,8 @@ if __name__ == '__main__':
 
     if WTA:
         wta_neuron = p.Population(1, p.IF_curr_exp(*neuron_params), label='WTA')
-        wta_neuron.record('spikes')
+        if not isinstance(simulate, str):
+            wta_neuron.record('spikes')
 
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
         to_wta_scale = float(len(proto_object_pop))
@@ -757,7 +761,8 @@ if __name__ == '__main__':
         print 'to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale)
         print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
         for object in proto_object_pop:
-            object.record('spikes')
+            if not isinstance(simulate, str):
+                object.record('spikes')
             if WTA:
                 p.Projection(object, wta_neuron, p.FromListConnector([[0, 0, base_weight * (to_wta / to_wta_scale), 1]]), receptor_type='excitatory')
                 p.Projection(wta_neuron, object, p.FromListConnector([[0, 0, base_weight * (from_wta / to_wta_scale), 1]]), receptor_type='inhibitory')
@@ -765,13 +770,29 @@ if __name__ == '__main__':
                 p.Projection(object, object, p.FromListConnector([[0, 0, base_weight * self_excite, 1]]))
 
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
-    move_pop.record('spikes')
+    if not isinstance(simulate, str):
+        move_pop.record('spikes')
 
     # p.run(runtime)
     if isinstance(simulate, str):
         p.run(runtime)
     else:
+        p.external_devices.activate_live_output_to(move_pop, vis_pop)
+        # out_port = yarp.BufferedPortBottle()
+        # out_port.open('/spinn:o')
+        # # bottle = out_port.prepare()
+        # # bottle.clear()
+        # # bottle.addInt32(2)
+        # # out_port.write()
+        # # out_port
+        # # b.addString("thing")
+        # while True:
+        #     bottle = out_port.prepare()
+        #     bottle.clear()
+        #     bottle.addInt32(2)
+        #     out_port.write()
         p.external_devices.run_forever()
+        # stop recording
         raw_input('Press enter to stop')
 
     print "saving"
@@ -879,7 +900,7 @@ if __name__ == '__main__':
                                    object_spikes[idx])
 
     wta_spikes = wta_neuron.get_data()
-    print 'wta_spikes:', wta_spikes.segments[0].spiketrains.size
+    print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
 
     #
     # Plot
