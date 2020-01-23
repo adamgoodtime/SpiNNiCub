@@ -934,7 +934,7 @@ if __name__ == '__main__':
             #     for spike_time in spike_times:
             #         # idx = rotation, id2 = neuron id for that rotation
             #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-            print 'last entry = ', filter_spikes_times[-1]
+            # print 'last entry = ', filter_spikes_times[-1]
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     wta_spikes = wta_neuron.get_data()
