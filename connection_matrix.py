@@ -907,7 +907,7 @@ if __name__ == '__main__':
                                    filter_pop_spikes[idx],
                                    object_spikes[idx])
 
-    filter_spikes_times = ['it begins']
+    filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
         rotation_spike_times = []
         for idx, pop in enumerate(filter_populations_data):
