@@ -83,7 +83,7 @@ class ICUBInputVertex(
         index = graph_mapper.get_machine_vertex_index(partition.pre_vertex)
         vertex_slice = graph_mapper.get_slice(partition.pre_vertex)
         mask = get_possible_masks(vertex_slice.n_atoms)[0]
-        key = (0x1000 + index) << 16
+        key = (0x10 + index) << 24
         return [FixedKeyAndMaskConstraint(
             keys_and_masks=[BaseKeyAndMask(key, mask)])]
 
@@ -592,13 +592,13 @@ if __name__ == '__main__':
     inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
     proto_scale = 0.75
-    inhib = False #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
     WTA = False
     to_wta = 10.
     from_wta = 10.
     self_excite = 0.
 
-    simulate = 'subset'
+    simulate = 'proto'
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
@@ -835,11 +835,20 @@ if __name__ == '__main__':
                 filter_segment_spikes[filter_idx] += neuron.size
                 print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
     filter_pop_spikes = [0 for i in range(len(filter_sizes))]
+    filter_spikes_times = [[] for i in range(len(filter_sizes))]
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
+        rotation_spike_times = []
         for idx, pop in enumerate(filter_populations_data):
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_pop_spikes[filter_idx] += neuron.size
+                if neuron.size:
+                    spike_times = spikes[0].magnitude
+                    for spike_time in spike_times:
+                        # idx = rotation, id2 = neuron id for that rotation
+                        rotation_spike_times.append([pop[1], idx, id2, spike_time])
+        filter_spikes_times.append(rotation_spike_times)
+    np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
                 print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
     object_spikes = [0 for i in range(len(filter_sizes))]
     coords_and_times = []
