@@ -914,18 +914,27 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             spike_count = 0
             for id2, neuron in enumerate(spikes):
-                spike_count += neuron.size
+                spike_count = neuron.size
+                if spike_count:
+                    print 'spikes were found'
+                    spike_times = neuron.magnitude
+                    print 'number of spikes = ', len(spike_times)
+                    if filter_idx == 0 and idx == 0:
+                        print spike_times
+                    for spike_time in spike_times:
+                        # idx = rotation, id2 = neuron id for that rotation
+                        filter_spikes_times.append([pop[1], idx, id2, spike_time])
             print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
-            if spike_count:
-                print 'spikes were found'
-                spike_times = spikes[0].magnitude
-                print 'number of spikes = ', len(spike_times)
-                if filter_idx == 0 and idx == 0:
-                    print spike_times
-                for spike_time in spike_times:
-                    # idx = rotation, id2 = neuron id for that rotation
-                    filter_spikes_times.append([pop[1], idx, id2, spike_time])
-                print 'last entry = ', filter_spikes_times[-1]
+            # if spike_count:
+            #     print 'spikes were found'
+            #     spike_times = spikes[0].magnitude
+            #     print 'number of spikes = ', len(spike_times)
+            #     if filter_idx == 0 and idx == 0:
+            #         print spike_times
+            #     for spike_time in spike_times:
+            #         # idx = rotation, id2 = neuron id for that rotation
+            #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
+            print 'last entry = ', filter_spikes_times[-1]
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     wta_spikes = wta_neuron.get_data()
