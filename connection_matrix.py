@@ -835,20 +835,20 @@ if __name__ == '__main__':
                 filter_segment_spikes[filter_idx] += neuron.size
                 print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
     filter_pop_spikes = [0 for i in range(len(filter_sizes))]
-    filter_spikes_times = []
+    # filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
         rotation_spike_times = []
         for idx, pop in enumerate(filter_populations_data):
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_pop_spikes[filter_idx] += neuron.size
-                if neuron.size:
-                    spike_times = spikes[0].magnitude
-                    for spike_time in spike_times:
-                        # idx = rotation, id2 = neuron id for that rotation
-                        filter_spikes_times.append([pop[1], idx, id2, spike_time])
                 print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
-    np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
+            # if filter_pop_spikes[filter_idx]:
+            #     spike_times = spikes[0].magnitude
+            #     for spike_time in spike_times:
+                    # idx = rotation, id2 = neuron id for that rotation
+                    # filter_spikes_times.append([pop[1], idx, id2, spike_time])
+    # np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
     object_spikes = [0 for i in range(len(filter_sizes))]
     coords_and_times = []
     all_spike_count = {}
@@ -906,6 +906,27 @@ if __name__ == '__main__':
                                    filter_segment_spikes[idx],
                                    filter_pop_spikes[idx],
                                    object_spikes[idx])
+
+    filter_spikes_times = ['it begins']
+    for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
+        rotation_spike_times = []
+        for idx, pop in enumerate(filter_populations_data):
+            spikes = pop[0].segments[0].spiketrains
+            spike_count = 0
+            for id2, neuron in enumerate(spikes):
+                spike_count += neuron.size
+            print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
+            if spike_count:
+                print 'spikes were found'
+                spike_times = spikes[0].magnitude
+                print 'number of spikes = ', len(spike_times)
+                if filter_idx == 0 and idx == 0:
+                    print spike_times
+                for spike_time in spike_times:
+                    # idx = rotation, id2 = neuron id for that rotation
+                    filter_spikes_times.append([pop[1], idx, id2, spike_time])
+                print 'last entry = ', filter_spikes_times[-1]
+    np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     wta_spikes = wta_neuron.get_data()
     print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
