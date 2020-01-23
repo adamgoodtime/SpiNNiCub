@@ -847,9 +847,9 @@ if __name__ == '__main__':
                     for spike_time in spike_times:
                         # idx = rotation, id2 = neuron id for that rotation
                         rotation_spike_times.append([pop[1], idx, id2, spike_time])
+                print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
         filter_spikes_times.append(rotation_spike_times)
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
-                print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
     object_spikes = [0 for i in range(len(filter_sizes))]
     coords_and_times = []
     all_spike_count = {}
