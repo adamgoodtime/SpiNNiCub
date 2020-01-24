@@ -584,12 +584,12 @@ if __name__ == '__main__':
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
     filter_split = 4
-    overlap = 0.6
+    overlap = 0.9
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.02
+    segment_percentage_fire_threshold = 0.04
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.02
+    inhib_percentage_fire_threshold = 0.04
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -598,7 +598,7 @@ if __name__ == '__main__':
     from_wta = 10.
     self_excite = 0.
 
-    simulate = 'proto'
+    simulate = 'no_proto'
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
@@ -644,6 +644,8 @@ if __name__ == '__main__':
                 all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
             elif simulate == 'proto':
                 all_directories = gather_all_ATIS_log('ATIS/(no)proto_object')
+            elif simulate == 'no_proto':
+                all_directories = gather_all_ATIS_log('ATIS/(no)proto_object/no_obj')
             else:
                 print "incorrect stimulus setting"
                 Exception
