@@ -116,16 +116,19 @@ def zero_2pi_tan(x, y):
 
 # Von Mises filter function, takes values between -1 and 1 and outputs the corresponding value
 def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
-    theta *= np.pi/4
+    theta *= np.pi/4.
     # rescaling of x and y for correct filter placement
-    x = (x*15) + (0.8*r) * np.cos(theta)
-    y = (y*15) - (0.8*r) * np.sin(theta)
-    # slit the value for the filter
+    x = (x*15.) + (0.8*r) * np.cos(theta)
+    y = (y*15.) - (0.8*r) * np.sin(theta)
+    # split the value for the filter
     angle = zero_2pi_tan(x, y)
     if (angle >= np.pi - theta and angle <= (2*np.pi) - theta):
         split = -1
     else:
-        split = int((angle + theta) / (np.pi / float(filter_split))) % filter_split
+        split = int((angle + theta) / (np.pi / float(filter_split))) % (filter_split * 2)
+        if split >= filter_split:
+            split = -1
+        # print "angle:", angle, "- split, b:", split, big_split, "- theta:", theta, "( x, y ): (", orig_x, orig_y, ")"
     numerator = np.exp(p * r * np.cos(np.arctan2(-y, x) - theta))
     denominator = np.i0(np.sqrt(np.square(x) + np.square(y)) - r)
     if denominator == 0:
@@ -134,16 +137,19 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
     # threshold to get rid of small tail
     if VM_output < threshold:
         VM_output = 0
+        split = -1
     else:
         VM_output = 1#-= threshold
     return VM_output, split
 
+# converts x, y coords to the appropriate neuron ID for running in simulation or live
 def convert_pixel_to_id(x, y):
     if isinstance(simulate, str):
         return (y*x_res) + x
     else:
         return (int(y) << 12) + (int(x) << 1) + 1
 
+# creates the list of coords for the highest value of x and y that defines the bounding of all filters possible
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     list_of_corners = []
     i = filter_width + peripheral_x
@@ -159,6 +165,7 @@ def create_filter_boundaries(filter_width, filter_height, overlap=0.):
         x += 1
     return list_of_corners, x, y
 
+# creates the connection list for connecting pixels to the periphery of the visual field, outside the fovea
 def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=False):
     '''
     0........w
@@ -255,7 +262,69 @@ def create_peripheral_mapping(base_weight, percentage_fire_threshold=0.5, plot=F
 
     return pixel_mapping
 
+# creates the mapping from pixels to filters, first creates the kernel weight/ connection values for an individual filter
+# then recreates it shifted for the list of all corners
+def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotation=0, overlap=0., plot=True):
+    # create the filter which is to be copied in a grid like fashion around the visual field
+    kernel_matrixes = [[] for i in range(filter_split)]
+    kernel_count = [0 for i in range(filter_split)]
+    filter_split_matrix = []
+    filter_matrix = []
+    inhibitory_matrix = []
+    inhib_count = 0
+    xs = []
+    ys = []
+    for i in range(filter_width):
+        split_row = []
+        filter_row = []
+        inhibitory_row = []
+        x = []
+        y = []
+        kernel_row = [[] for k in range(filter_split)]
+        for j in range(filter_height):
+            x_value = ((float(i) / float(filter_width)) * 2) - 1
+            y_value = ((float(j) / float(filter_height)) * 2) - 1
+            pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
+            if not pixel_value:
+                inhibitory_row.append(1)
+                inhib_count += 1
+                split_row.append(-1)
+            else:
+                inhibitory_row.append(0)
+                split_row.append(split)
+            x.append(x_value)
+            y.append(y_value)
+            filter_row.append(pixel_value)
+            for map_split in range(filter_split):
+                if map_split == split and pixel_value:
+                    kernel_row[map_split].append(1)
+                    kernel_count[map_split] += 1
+                else:
+                    kernel_row[map_split].append(0)
+        for map_split in range(filter_split):
+            kernel_matrixes[map_split].append(kernel_row[map_split])
+        filter_split_matrix.append(split_row)
+        filter_matrix.append(filter_row)
+        inhibitory_matrix.append(inhibitory_row)
+        xs.append(x)
+        ys.append(y)
 
+    corners_list, max_filters_x, max_filters_y = create_filter_boundaries(filter_width, filter_height, overlap)
+
+    # copy the filter dimensions around the board
+    number_of_neurons = max_filters_x * max_filters_y
+
+    if plot:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_split_matrix))
+        # ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_matrix))
+        plt.show()
+
+    return kernel_matrixes, number_of_neurons, [max_filters_x, max_filters_y], kernel_count, inhibitory_matrix, inhib_count
+
+# creates the mapping from pixels to filters, first creates the kernel weight/ connection values for an individual filter
+# then recreates it shifted for the list of all corners
 def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_split=4, rotation=0,
                               base_weight=1., percentage_fire_threshold=0.5, inhib_percentage_fire_threshold=1.,
                               inhib_connect_prob=1., plot=False):
@@ -264,7 +333,6 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
     filter_matrix = []
     xs = []
     ys = []
-    zero_count = 0
     for i in range(filter_width):
         split_row = []
         filter_row = []
@@ -274,8 +342,6 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
             x_value = ((float(i) / float(filter_width)) * 2) - 1
             y_value = ((float(j) / float(filter_height)) * 2) - 1
             pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
-            if not pixel_value:
-                zero_count += 1
             x.append(x_value)
             y.append(y_value)
             filter_row.append(pixel_value)
@@ -340,12 +406,14 @@ def visual_field_with_overlap(filter_width, filter_height, overlap=0., filter_sp
         plt.show()
     return exc_connection_list, inh_connection_list, len(exc_neuron_id_count)
 
+# connects the filter splits to a single filter
 def create_filter_neuron_connections(filter_split, no_neurons, base_weight, percentage_fire_threshold):
     connections = []
     for i in range(no_neurons):
         connections.append([i, int(i/filter_split), (base_weight/filter_split)/percentage_fire_threshold, 1])
     return connections
 
+# creates the list of proto-objects and connects the necessary rotations of filters together
 def proto_objects(population_1, population_2, filter_width, filter_height, base_weight, weight_scale=0.5):
     max_filters_x_wrong = int((x_res - peripheral_x*2) / (filter_width * (1-overlap)))
     max_filters_y_wrong = int((y_res - peripheral_y*2) / (filter_height * (1-overlap)))
@@ -381,6 +449,7 @@ def proto_objects(population_1, population_2, filter_width, filter_height, base_
                     p.Projection(population_2[3], proto_object_neurons[-1], p.FromListConnector([[n1, 0, base_weight*weight_scale, 1]]))
     return proto_object_neurons
 
+# decodes from the proto-object label the x,y location of it's centre
 def convert_filter_xy_to_proto_centre(split_data, overlap):
     [filter_size, filter_x, filter_y, direction] = split_data
     filter_x = float(filter_x)
@@ -504,9 +573,10 @@ def parse_event_class(eventsON, eventsOFF):
             events[convert_pixel_to_id(x, y)].append(timestamp)
     return events
 
+# connect from vis pop in the necessary way depending on the type of run
 def connect_vis_pop(vis, post, connections, receptor_type='excitatory'):
     if isinstance(simulate, str):
-        p.Projection(vis, post, p.FromListConnector(connections), receptor_type=receptor_type)
+        p.Projection(vis, post, p.FromListConnector(connections), p.StaticSynapse(delay=1), receptor_type=receptor_type)
     else:
         zero_polarity = []
         for conn in connections:
@@ -514,6 +584,7 @@ def connect_vis_pop(vis, post, connections, receptor_type='excitatory'):
         p.Projection(vis, post, p.FromListConnector(connections), receptor_type=receptor_type)
         p.Projection(vis, post, p.FromListConnector(zero_polarity), receptor_type=receptor_type)
 
+# connect the proto-objects  and boarder to the appropriate direction
 def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, base_weight):
     # up, down, left, right = 0, 1, 2, 3
     move_pop = p.Population(4, p.IF_curr_exp(*neuron_params), label='movement_udlr')
@@ -533,18 +604,18 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
             boarder_movement_connections.append([neuron, 3, base_weight*boarder_weight_scale, 1])
     p.Projection(boarder, move_pop, p.FromListConnector(boarder_movement_connections))
 
-    for proto_size in proto:
-        for proto_object in proto_size:
-            split_data = proto_object.label.split('-')
-            x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
-            if x < x_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector([[0, 1, base_weight*boarder_weight_scale, 1]]))
-            if x >= x_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector([[0, 0, base_weight*boarder_weight_scale, 1]]))
-            if y < y_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector([[0, 2, base_weight*boarder_weight_scale, 1]]))
-            if y >= y_res / 2:
-                p.Projection(proto_object, move_pop, p.FromListConnector([[0, 3, base_weight*boarder_weight_scale, 1]]))
+    # for proto_size in proto:
+    #     for proto_object in proto_size:
+    #         split_data = proto_object.label.split('-')
+    #         x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+    #         if x < x_res / 2:
+    #             p.Projection(proto_object, move_pop, p.FromListConnector([[0, 1, base_weight*boarder_weight_scale, 1]]))
+    #         if x >= x_res / 2:
+    #             p.Projection(proto_object, move_pop, p.FromListConnector([[0, 0, base_weight*boarder_weight_scale, 1]]))
+    #         if y < y_res / 2:
+    #             p.Projection(proto_object, move_pop, p.FromListConnector([[0, 2, base_weight*boarder_weight_scale, 1]]))
+    #         if y >= y_res / 2:
+    #             p.Projection(proto_object, move_pop, p.FromListConnector([[0, 3, base_weight*boarder_weight_scale, 1]]))
     # mutual inhibition
     # inhibit_list = []
     # for i in range(4):
@@ -570,6 +641,8 @@ if __name__ == '__main__':
     horizontal_split = 1
     veritcal_split = 1
 
+    kernel = True
+
     neuron_params = {
         # balance the refractory period/tau_mem so membrane has lost contribution before next spike
     }
@@ -584,12 +657,12 @@ if __name__ == '__main__':
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
     filter_split = 4
-    overlap = 0.9
+    overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.04
+    segment_percentage_fire_threshold = 0.005
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.04
+    inhib_percentage_fire_threshold = 0.08
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -598,7 +671,7 @@ if __name__ == '__main__':
     from_wta = 10.
     self_excite = 0.
 
-    simulate = 'no_proto'
+    simulate = 'subset'
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
@@ -668,7 +741,7 @@ if __name__ == '__main__':
         print "running until enter is pressed"
         p.setup(timestep=1.0)
         vis_pop = p.Population(None, ICUBInputVertex(spinnaker_link_id=0), label='pop_in')
-
+    p.set_number_of_neurons_per_core(p.IF_curr_exp(), 64)
     # create boarder connections and populations
     boarder_connections = create_peripheral_mapping(base_weight=base_weight,
                                                     percentage_fire_threshold=boarder_percentage_fire_threshold,
@@ -684,6 +757,7 @@ if __name__ == '__main__':
     all_filter_segments = []
     all_filter_populations = []
     all_proto_object_pops = []
+    projection_list = []
     for filter in list_of_filter_sizes:
         print "SpiNN setup for filter", filter
         # for each rotation, 0 -> 7pi/4
@@ -691,42 +765,97 @@ if __name__ == '__main__':
         filter_populations = []
         for rotation in range(8):
             print "Rotation", rotation+1, "/ 8"
-            segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
-                                                                                         overlap=overlap,
-                                                                                         rotation=rotation,
-                                                                                         filter_split=filter_split,
-                                                                                         base_weight=base_weight/float(filter_split),
-                                                                                         percentage_fire_threshold=segment_percentage_fire_threshold,
-                                                                                         inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
-                                                                                         inhib_connect_prob=inhib_connect_prob,
-                                                                                         plot=False)
-            # create neurons for each segment of filter
-            filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                                   label='segments {} - {}'.format(filter, rotation)))
+            if not kernel:
+                segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
+                                                                                             overlap=overlap,
+                                                                                             rotation=rotation,
+                                                                                             filter_split=filter_split,
+                                                                                             base_weight=base_weight/float(filter_split),
+                                                                                             percentage_fire_threshold=segment_percentage_fire_threshold,
+                                                                                             inhib_percentage_fire_threshold=inhib_percentage_fire_threshold,
+                                                                                             inhib_connect_prob=inhib_connect_prob,
+                                                                                             plot=False)
+                # create neurons for each segment of filter
+                filter_segments.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                                       label='segments {} - {}'.format(filter, rotation)))
+            else:
+                kernel_matrices, no_neurons, post_shape, kernel_count, inhibitory_matrix, inhib_count = visual_field_with_kernal(filter[0], filter[1],
+                                                                                               filter_split=filter_split,
+                                                                                               rotation=rotation,
+                                                                                               overlap=overlap,
+                                                                                               plot=False)
+                filter_segment_splits = []
+                for split in range(filter_split):
+                    filter_segment_splits.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
+                                                        label='segments {} - {} - {}'.format(filter, rotation, split)))
+                filter_segments.append(filter_segment_splits)
+
             # project events to neurons/filter segments
-            connect_vis_pop(vis_pop, filter_segments[-1], segment_connection)
+            if not kernel:
+                connect_vis_pop(vis_pop, filter_segments[-1], segment_connection)
+            else:
+                # shape_pre = np.asarray([fovea_x, fovea_y])
+                shape_pre = np.asarray([x_res, y_res])
+                shape_post = np.asarray(post_shape)
+                shape_kernel = np.asarray(filter)
+                pre_sample_steps = shape_kernel * (1. - overlap)
+                start_location = np.asarray([peripheral_x, peripheral_y])
+                print "shape_pre", shape_pre
+                print "shape_post", shape_post
+                print "shape_kernel", shape_kernel
+                print "pre_sample_steps", pre_sample_steps
+                print "start_location", start_location
+                for split in range(filter_split):
+                    weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
+                    proj = p.Projection(vis_pop, filter_segments[-1][split], p.KernelConnector(shape_pre=shape_pre,
+                                                                                        shape_post=shape_post,
+                                                                                        shape_kernel=shape_kernel,
+                                                                                        weight_kernel=weight_kernel,
+                                                                                        post_sample_steps=pre_sample_steps,
+                                                                                        post_start_coords=start_location))
+                    projection_list.append(proj)
             # p.Projection(vis_pop, filter_segments[-1], p.FromListConnector(segment_connection))
-            # connect segments into a single filter neuron
-            filter_connections = create_filter_neuron_connections(filter_split=filter_split,
-                                                                  no_neurons=no_neurons,
-                                                                  base_weight=base_weight,
-                                                                  percentage_fire_threshold=filter_percentage_fire_threshold)
-            filter_populations.append(p.Population(no_neurons/filter_split, p.IF_curr_exp(*neuron_params),
+            filter_populations.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
                                                       label='filter {} - {}'.format(filter, rotation)))
-            if len(inhib_connection) != 0:
-                connect_vis_pop(vis_pop, filter_populations[-1], inhib_connection, receptor_type='inhibitory')
-                # p.Projection(vis_pop, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
-            p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
+            # connect segments into a single filter neuron
+            if not kernel:
+                filter_connections = create_filter_neuron_connections(filter_split=filter_split,
+                                                                      no_neurons=no_neurons,
+                                                                      base_weight=base_weight,
+                                                                      percentage_fire_threshold=filter_percentage_fire_threshold)
+                if len(inhib_connection) != 0:
+                    connect_vis_pop(vis_pop, filter_populations[-1], inhib_connection, receptor_type='inhibitory')
+                    # p.Projection(vis_pop, filter_populations[-1], p.FromListConnector(inhib_connection), receptor_type='inhibitory')
+                p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
+            else:
+                # shape_pre = np.asarray([fovea_x, fovea_y])
+                shape_pre = np.asarray([x_res, y_res])
+                shape_post = np.asarray(post_shape)
+                shape_kernel = np.asarray(filter)
+                pre_sample_steps = shape_kernel * (1. - overlap)
+                start_location = np.asarray([peripheral_x, peripheral_y])
+                weight_kernel = np.asarray(inhibitory_matrix) / (inhib_count * inhib_percentage_fire_threshold)
+                p.Projection(vis_pop, filter_populations[-1], p.KernelConnector(shape_pre=shape_pre,
+                                                                                shape_post=shape_post,
+                                                                                shape_kernel=shape_kernel,
+                                                                                weight_kernel=weight_kernel,
+                                                                                pre_sample_steps=pre_sample_steps,
+                                                                                pre_start_coords=start_location),
+                             receptor_type='inhibitory')
+                weight = (base_weight/filter_split) / filter_percentage_fire_threshold
+                for split in range(filter_split):
+                    p.Projection(filter_segments[-1][split], filter_populations[-1], p.OneToOneConnector(), p.StaticSynapse(weight=weight, delay=1))
             if simulate:
                 filter_populations[-1].record('spikes')
-                filter_segments[-1].record('spikes')
-            print "number of neurons in segments = ", no_neurons
-            print "number of neurons in filters = ", (no_neurons/filter_split)
-            print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
+                for split in range(filter_split):
+                    filter_segments[-1][split].record('spikes')
+            print "number of neurons in segments = ", no_neurons*filter_split
+            print "number of neurons in filters = ", no_neurons
+            # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
 
-        print "total number of neurons in segments = ", no_neurons * 8
-        print "total number of neurons in filters = ", (no_neurons / filter_split) * 8
-        print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
+        print "total number of neurons in segments = ", no_neurons * 8 * filter_split
+        print "total number of neurons in filters = ", (no_neurons) * 8
+        # print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
         # create proto object
         all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
         all_filter_segments.append(filter_segments)
@@ -770,8 +899,10 @@ if __name__ == '__main__':
                 p.Projection(wta_neuron, object, p.FromListConnector([[0, 0, base_weight * (from_wta / to_wta_scale), 1]]), receptor_type='inhibitory')
             if self_excite:
                 p.Projection(object, object, p.FromListConnector([[0, 0, base_weight * self_excite, 1]]))
-
+    print "generating move pop"
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
+
+    print "running"
     if simulate:
         move_pop.record('spikes')
 
@@ -805,7 +936,8 @@ if __name__ == '__main__':
     for filter_size, filter_data in enumerate(all_filter_segments):
         filter_segments_data = []
         for data in filter_data:
-            filter_segments_data.append([data.get_data(), data.label])
+            for split_data in data:
+                filter_segments_data.append([split_data.get_data(), split_data.label])
         all_filter_segments_data.append(filter_segments_data)
         np.save('filter segments data {}-{}.npy'.format(filter_sizes[filter_size], label), filter_segments_data)
 
@@ -918,15 +1050,15 @@ if __name__ == '__main__':
             for id2, neuron in enumerate(spikes):
                 spike_count = neuron.size
                 if spike_count:
-                    print 'spikes were found'
+                    # print 'spikes were found'
                     spike_times = neuron.magnitude
-                    print 'number of spikes = ', len(spike_times)
-                    if filter_idx == 0 and idx == 0:
-                        print spike_times
+                    # print 'number of spikes = ', len(spike_times)
+                    # if filter_idx == 0 and idx == 0:
+                    #     print spike_times
                     for spike_time in spike_times:
                         # idx = rotation, id2 = neuron id for that rotation
                         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-            print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
+                    print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
             # if spike_count:
             #     print 'spikes were found'
             #     spike_times = spikes[0].magnitude
@@ -936,143 +1068,14 @@ if __name__ == '__main__':
             #     for spike_time in spike_times:
             #         # idx = rotation, id2 = neuron id for that rotation
             #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-            # print 'last entry = ', filter_spikes_times[-1]
+            print 'last entry = ', filter_spikes_times[-1]
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
-    wta_spikes = wta_neuron.get_data()
-    print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
+    if WTA:
+        wta_spikes = wta_neuron.get_data()
+        print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
 
-    #
-    # Plot
-    F = Figure(
-    #         # plot data for postsynaptic neuron
-    #         Panel(in_spikes.segments[0].spiketrains,
-    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        Panel(object_data[0].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[1].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[2].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[3].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[4].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[5].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[6].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[7].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        # Panel(pop_out_data.segments[0].filter(name='v')[0],
-        #       ylabel="Membrane potential (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-        #       ylabel="gsyn excitatory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-        #       ylabel="gsyn inhibitory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].spiketrains,
-        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        # annotations="Batch: {}".format(i)
-        )
-    plt.show()
-    F = Figure(
-    #         # plot data for postsynaptic neuron
-    #         Panel(in_spikes.segments[0].spiketrains,
-    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        Panel(object_data[8].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[9].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[10].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[11].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[12].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[13].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[14].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[15].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        # Panel(pop_out_data.segments[0].filter(name='v')[0],
-        #       ylabel="Membrane potential (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-        #       ylabel="gsyn excitatory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-        #       ylabel="gsyn inhibitory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].spiketrains,
-        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        # annotations="Batch: {}".format(i)
-        )
-    plt.show()
-    F = Figure(
-    #         # plot data for postsynaptic neuron
-    #         Panel(in_spikes.segments[0].spiketrains,
-    #               yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        Panel(object_data[16].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[17].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[18].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[19].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[20].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        Panel(object_data[21].segments[0].spiketrains,
-              yticks=True, markersize=2, xlim=(0, 15000)
-              ),
-        # Panel(pop_out_data.segments[0].filter(name='v')[0],
-        #       ylabel="Membrane potential (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_exc')[0],
-        #       ylabel="gsyn excitatory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].filter(name='gsyn_inh')[0],
-        #       ylabel="gsyn inhibitory (mV)",
-        #       data_labels=[pop_out.label], yticks=True, xlim=(plot_start, plot_end)
-        #       ),
-        # Panel(pop_out_data.segments[0].spiketrains,
-        #       yticks=True, markersize=2, xlim=(plot_start, plot_end)),
-        # annotations="Batch: {}".format(i)
-        )
-    plt.show()
+    p.end()
 
     print "done"
 

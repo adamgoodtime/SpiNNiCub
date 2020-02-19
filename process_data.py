@@ -70,11 +70,14 @@ def create_gaussians(filter_size):
     # z *= filter_size
     return z
 
-def create_video(file_location, file_name, frame_rate, spikes=[]):
+def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
     if spikes:
         spike_data = spikes
     else:
-        spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
+        if proto:
+            spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
+        else:
+            spike_data = np.load("{}/filter rotations spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
 
     print "parsing data"
@@ -321,7 +324,7 @@ if __name__ == '__main__':
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
 
-    video_of = 'not solo'
+    video_of = 'solo'
     if video_of == 'raw':
         all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
         combined_events = []
@@ -342,7 +345,7 @@ if __name__ == '__main__':
                     os.mkdir(root+'/videos')
                 create_video(root, 'events', 2, spikes=spikes)
     elif video_of == 'solo':
-        filter_sizes = [100, 70, 46, 30]
+        filter_sizes = [100, 70, 55, 40]
         list_of_filter_sizes = []
         for filter_size in filter_sizes:
             list_of_filter_sizes.append([filter_size, filter_size])
@@ -378,8 +381,9 @@ if __name__ == '__main__':
         if self_excite:
             label += ' self-{}'.format(self_excite)
         label += ' {}'.format(filter_sizes)
+        label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.005 fft-0.8 ift-0.08 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
         print label
-        create_video("run_data", label, 2)
+        create_video("run_data", label, 2, proto=True)
         # process_movement("run_data", label, 2)
     else:
         sfts = [0.04, 0.02]
