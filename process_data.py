@@ -381,7 +381,7 @@ if __name__ == '__main__':
         if self_excite:
             label += ' self-{}'.format(self_excite)
         label += ' {}'.format(filter_sizes)
-        label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.005 fft-0.8 ift-0.08 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
+        label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
         print label
         create_video("run_data", label, 2, proto=True)
         # process_movement("run_data", label, 2)

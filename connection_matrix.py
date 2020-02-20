@@ -154,10 +154,10 @@ def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     list_of_corners = []
     i = filter_width + peripheral_x
     x = 0
-    while i < x_res - peripheral_x:
+    while i <= x_res - peripheral_x:
         j = filter_height + peripheral_y
         y = 0
-        while j < y_res - peripheral_y:
+        while j <= y_res - peripheral_y:
             list_of_corners.append([i, j, x, y])
             j += filter_height - (overlap * filter_height)
             y += 1
@@ -321,7 +321,7 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
         # ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_matrix))
         plt.show()
 
-    return kernel_matrixes, number_of_neurons, [max_filters_x, max_filters_y], kernel_count, inhibitory_matrix, inhib_count
+    return kernel_matrixes, number_of_neurons, [max_filters_y, max_filters_x], kernel_count, inhibitory_matrix, inhib_count
 
 # creates the mapping from pixels to filters, first creates the kernel weight/ connection values for an individual filter
 # then recreates it shifted for the list of all corners
@@ -660,9 +660,9 @@ if __name__ == '__main__':
     overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.005
+    segment_percentage_fire_threshold = 0.03
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.08
+    inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -795,11 +795,11 @@ if __name__ == '__main__':
                 connect_vis_pop(vis_pop, filter_segments[-1], segment_connection)
             else:
                 # shape_pre = np.asarray([fovea_x, fovea_y])
-                shape_pre = np.asarray([x_res, y_res])
+                shape_pre = np.asarray([y_res, x_res])
                 shape_post = np.asarray(post_shape)
                 shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
-                start_location = np.asarray([peripheral_x, peripheral_y])
+                start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 print "shape_pre", shape_pre
                 print "shape_post", shape_post
                 print "shape_kernel", shape_kernel
@@ -807,6 +807,7 @@ if __name__ == '__main__':
                 print "start_location", start_location
                 for split in range(filter_split):
                     weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
+                    weight_kernel = weight_kernel.transpose()
                     proj = p.Projection(vis_pop, filter_segments[-1][split], p.KernelConnector(shape_pre=shape_pre,
                                                                                         shape_post=shape_post,
                                                                                         shape_kernel=shape_kernel,
@@ -829,12 +830,13 @@ if __name__ == '__main__':
                 p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
             else:
                 # shape_pre = np.asarray([fovea_x, fovea_y])
-                shape_pre = np.asarray([x_res, y_res])
+                shape_pre = np.asarray([y_res, x_res])
                 shape_post = np.asarray(post_shape)
                 shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
-                start_location = np.asarray([peripheral_x, peripheral_y])
+                start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 weight_kernel = np.asarray(inhibitory_matrix) / (inhib_count * inhib_percentage_fire_threshold)
+                weight_kernel = weight_kernel.transpose()
                 p.Projection(vis_pop, filter_populations[-1], p.KernelConnector(shape_pre=shape_pre,
                                                                                 shape_post=shape_post,
                                                                                 shape_kernel=shape_kernel,
@@ -1068,7 +1070,8 @@ if __name__ == '__main__':
             #     for spike_time in spike_times:
             #         # idx = rotation, id2 = neuron id for that rotation
             #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-            print 'last entry = ', filter_spikes_times[-1]
+            if filter_spikes_times:
+                print 'last entry = ', filter_spikes_times[-1]
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     if WTA:
