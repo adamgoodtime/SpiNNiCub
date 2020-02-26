@@ -70,9 +70,52 @@ def create_gaussians(filter_size):
     # z *= filter_size
     return z
 
+def create_filter_boundaries(filter_width, filter_height, overlap=0.):
+    list_of_corners = []
+    i = filter_width + peripheral_x
+    x = 0
+    while i < x_res - peripheral_x:
+        j = filter_height + peripheral_y
+        y = 0
+        while j < y_res - peripheral_y:
+            list_of_corners.append([i, j, x, y])
+            j += filter_height - (overlap * filter_height)
+            y += 1
+        i += filter_width - (overlap * filter_width)
+        x += 1
+    return list_of_corners, x, y
+
+def parse_filter_data(file_location, file_name, filter_sizes):
+    corner_list = {}
+    video_dict = {}
+    for filter_size in filter_sizes:
+        corner_list['{}'.format(filter_size)] = create_filter_boundaries(filter_size, filter_size, 0.6)
+        for rotation in range(8):
+            video_dict['f{}-r{}'.format(filter_size, rotation)] = []
+    filter_data = np.load("{}/{}".format(file_location, file_name))
+    # extract rotation, x, y, and spike time from label, rotation, id, time
+    for spike in filter_data:
+        rotation = int(spike[1])
+        for filter_size in filter_sizes:
+            if '{}'.format(filter_size) in spike[0]:
+                spike_filter_size = filter_size
+                break
+        [x, y, maxx, maxy] = corner_list['{}'.format(spike_filter_size)][0][int(spike[2])]
+        if 0 > x > 304 or 0 < y > 240:
+            print "hol up"
+        x -= spike_filter_size / 2
+        y -= spike_filter_size / 2
+        if 0 > x > 304 or 0 < y > 240:
+            print "hol up"
+        spike_time = int(float(spike[3]))
+        video_dict['f{}-r{}'.format(spike_filter_size, rotation)].append([x, y, spike_time, spike_filter_size])
+    return video_dict
+
 def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
     if spikes:
         spike_data = spikes
+        if spike_data == []:
+            return None
     else:
         if proto:
             spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
@@ -324,7 +367,7 @@ if __name__ == '__main__':
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
 
-    video_of = 'solo'
+    video_of = 'filter_raw'
     if video_of == 'raw':
         all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
         combined_events = []
@@ -344,6 +387,17 @@ if __name__ == '__main__':
                 if 'videos' not in dirs:
                     os.mkdir(root+'/videos')
                 create_video(root, 'events', 2, spikes=spikes)
+    elif video_of == 'filter_raw':
+        all_directories = []
+        for root, dirs, files in os.walk('run_data/filter_data'):
+            for file in files:
+                if 'rotation' in file:
+                    spike_dict = parse_filter_data(root, file, filter_sizes)
+                if 'videos' not in dirs:
+                    os.mkdir(root + '/videos')
+                for param_setting in spike_dict:
+                    if spike_dict[param_setting]:
+                        create_video(root, file+param_setting, 2, spikes=spike_dict[param_setting])
     elif video_of == 'solo':
         filter_sizes = [100, 70, 55, 40]
         list_of_filter_sizes = []
