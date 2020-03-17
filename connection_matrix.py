@@ -144,10 +144,10 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
 
 # converts x, y coords to the appropriate neuron ID for running in simulation or live
 def convert_pixel_to_id(x, y):
-    if isinstance(simulate, str):
+    if isinstance(simulate, str) and not fake_full_ATIS:
         return (y*x_res) + x
     else:
-        return (int(y) << 12) + (int(x) << 1) + 1
+        return (int(y) << 12) + (int(x) << 1) + 0
 
 # creates the list of coords for the highest value of x and y that defines the bounding of all filters possible
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
@@ -288,6 +288,8 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
             if not pixel_value:
                 inhibitory_row.append(1)
                 inhib_count += 1
+                if fake_full_ATIS:
+                    inhib_count += 1
                 split_row.append(-1)
             else:
                 inhibitory_row.append(0)
@@ -299,12 +301,17 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
                 if map_split == split and pixel_value:
                     kernel_row[map_split].append(1)
                     kernel_count[map_split] += 1
+                    if fake_full_ATIS:
+                        kernel_count[map_split] += 1
                 else:
                     kernel_row[map_split].append(0)
         for map_split in range(filter_split):
             kernel_matrixes[map_split].append(kernel_row[map_split])
+            if fake_full_ATIS:
+                kernel_matrixes[map_split].append(kernel_row[map_split])
         filter_split_matrix.append(split_row)
         filter_matrix.append(filter_row)
+        inhibitory_matrix.append(inhibitory_row)
         inhibitory_matrix.append(inhibitory_row)
         xs.append(x)
         ys.append(y)
@@ -480,7 +487,10 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
 
 def parse_ATIS(file_location, file_name):
     f = open("{}/{}".format(file_location, file_name), "r")
-    events = [[] for i in range(x_res*y_res)]
+    if fake_full_ATIS:
+        events = [[] for i in range(np.power(2, 20))]
+    else:
+        events = [[] for i in range(x_res*y_res)]
     for line in f:
         line = np.array(line.split(','))
         if float(line[0]) < 0:
@@ -489,13 +499,19 @@ def parse_ATIS(file_location, file_name):
         else:
             time = float(line[0]) * 1000.
             # print time
-        events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
+        if fake_full_ATIS:
+            events[convert_pixel_to_id(int(line[2]), int(line[3])) + int(line[4])].append(time)
+        else:
+            events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
 def combine_parsed_ATIS(event_list):
     time_offset = 0
     max_time = 0
-    events = [[] for i in range(x_res*y_res)]
+    if fake_full_ATIS:
+        events = [[] for i in range(np.power(2, 20))]
+    else:
+        events = [[] for i in range(x_res*y_res)]
     for data_set in event_list:
         print 'combining', event_list.index(data_set) + 1, '/', len(event_list)
         for neuron_id in range(len(data_set)):
@@ -660,7 +676,7 @@ if __name__ == '__main__':
     overlap = 0.6
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.03
+    segment_percentage_fire_threshold = 0.02
     filter_percentage_fire_threshold = 0.8
     inhib_percentage_fire_threshold = 0.02
     inhib_connect_prob = 1.
@@ -671,7 +687,8 @@ if __name__ == '__main__':
     from_wta = 10.
     self_excite = 0.
 
-    simulate = 'subset'
+    simulate = 'proto'
+    fake_full_ATIS = True
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
@@ -736,7 +753,10 @@ if __name__ == '__main__':
         runtime = int(np.ceil(runtime)) + 1000
         print "running for", runtime, "ms"
         p.setup(timestep=1.0)
-        vis_pop = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='pop_in')
+        if fake_full_ATIS:
+            vis_pop = p.Population(np.power(2, 20), p.SpikeSourceArray(events), label='pop_in')
+        else:
+            vis_pop = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='pop_in')
     else:
         print "running until enter is pressed"
         p.setup(timestep=1.0)
@@ -795,9 +815,15 @@ if __name__ == '__main__':
                 connect_vis_pop(vis_pop, filter_segments[-1], segment_connection)
             else:
                 # shape_pre = np.asarray([fovea_x, fovea_y])
-                shape_pre = np.asarray([y_res, x_res])
+                if fake_full_ATIS:
+                    shape_pre = np.asarray([np.power(2, 8), np.power(2, 12)])
+                else:
+                    shape_pre = np.asarray([y_res, x_res])
                 shape_post = np.asarray(post_shape)
-                shape_kernel = np.asarray(filter)
+                if fake_full_ATIS:
+                    shape_kernel = np.asarray([filter[0], filter[1]*2])
+                else:
+                    shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 print "shape_pre", shape_pre
@@ -830,9 +856,15 @@ if __name__ == '__main__':
                 p.Projection(filter_segments[-1], filter_populations[-1], p.FromListConnector(filter_connections))
             else:
                 # shape_pre = np.asarray([fovea_x, fovea_y])
-                shape_pre = np.asarray([y_res, x_res])
+                if fake_full_ATIS:
+                    shape_pre = np.asarray([np.power(2, 8), np.power(2, 12)])
+                else:
+                    shape_pre = np.asarray([y_res, x_res])
                 shape_post = np.asarray(post_shape)
-                shape_kernel = np.asarray(filter)
+                if fake_full_ATIS:
+                    shape_kernel = np.asarray([filter[0], filter[1]*2])
+                else:
+                    shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 weight_kernel = np.asarray(inhibitory_matrix) / (inhib_count * inhib_percentage_fire_threshold)
