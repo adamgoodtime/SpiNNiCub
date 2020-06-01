@@ -1,3 +1,6 @@
+import matplotlib
+matplotlib.use('Agg')
+
 import warnings
 import numpy as np
 import spynnaker8 as p
