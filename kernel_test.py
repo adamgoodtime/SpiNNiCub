@@ -41,11 +41,11 @@ post_pop = p.Population(shape_post[0]*shape_post[1], p.IF_curr_exp())
 post_pop.record('all')
 
 proj = p.Projection(pre_pop, post_pop, p.KernelConnector(shape_pre=shape_pre,
-                                                           shape_post=shape_post,
-                                                           shape_kernel=shape_kernel,
-                                                           weight_kernel=weight_kernel,
-                                                           post_sample_steps=pre_sample_steps,
-                                                           post_start_coords=start_location))
+                                                         shape_post=shape_post,
+                                                         shape_kernel=shape_kernel,
+                                                         weight_kernel=weight_kernel,
+                                                         pre_sample_steps_in_post=pre_sample_steps,
+                                                         pre_start_coords_in_post=start_location))
 
 runtime = x_res*y_res
 p.run(runtime)
