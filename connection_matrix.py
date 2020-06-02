@@ -835,11 +835,12 @@ if __name__ == '__main__':
                     weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
                     weight_kernel = weight_kernel.transpose()
                     proj = p.Projection(vis_pop, filter_segments[-1][split], p.KernelConnector(shape_pre=shape_pre,
-                                                                                        shape_post=shape_post,
-                                                                                        shape_kernel=shape_kernel,
-                                                                                        weight_kernel=weight_kernel,
-                                                                                        post_sample_steps=pre_sample_steps,
-                                                                                        post_start_coords=start_location))
+                                                                                               shape_post=shape_post,
+                                                                                               shape_kernel=shape_kernel,
+                                                                                               weight_kernel=weight_kernel,
+                                                                                               post_sample_steps_in_pre=pre_sample_steps,
+                                                                                               post_start_coords_in_pre=start_location
+                                                                                               ))
                     projection_list.append(proj)
             # p.Projection(vis_pop, filter_segments[-1], p.FromListConnector(segment_connection))
             filter_populations.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
@@ -873,8 +874,8 @@ if __name__ == '__main__':
                                                                                 shape_post=shape_post,
                                                                                 shape_kernel=shape_kernel,
                                                                                 weight_kernel=weight_kernel,
-                                                                                pre_sample_steps=pre_sample_steps,
-                                                                                pre_start_coords=start_location),
+                                                                                post_sample_steps_in_pre=pre_sample_steps,
+                                                                                post_start_coords_in_pre=start_location),
                              receptor_type='inhibitory')
                 weight = (base_weight/filter_split) / filter_percentage_fire_threshold
                 for split in range(filter_split):

@@ -1,5 +1,5 @@
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 
 import warnings
 import numpy as np
@@ -57,6 +57,8 @@ p.run(runtime)
 pre_spikes = pre_pop.get_data('all')
 post_spikes = post_pop.get_data('all')
 
+print "creating graph"
+plt.figure()
 Figure(
     Panel(post_spikes.segments[0].filter(name='v')[0],
           ylabel="Membrane potential (mV)",
@@ -77,6 +79,8 @@ Figure(
     title="Spike data"
 )
 plt.show()
+print "creating second graph"
+plt.figure()
 Figure(
     # Panel(pre_spikes.segments[0].filter(name='v')[0],
     #       ylabel="Membrane potential (mV)",
@@ -94,6 +98,7 @@ Figure(
     title="Single eprop neuron"
 )
 plt.show()
+print "done"
 
 
 
