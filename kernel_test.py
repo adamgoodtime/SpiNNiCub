@@ -32,6 +32,7 @@ print "shape_post", shape_post
 print "shape_kernel", shape_kernel
 print "pre_sample_steps", pre_sample_steps
 print "start_location", start_location
+print "weight_kernel", weight_kernel
 
 p.setup(timestep=1)
 p.set_number_of_neurons_per_core(p.IF_curr_exp(), 128)
