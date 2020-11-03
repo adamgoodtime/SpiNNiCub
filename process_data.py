@@ -9,13 +9,13 @@ from scipy.stats import norm
 from mpl_toolkits.mplot3d import Axes3D
 import warnings
 import spynnaker8 as p
-from ATIS.decode_events import *
+from SpiNNiCub.ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
 import imageio
 from scipy.stats import multivariate_normal
 import sys
-from connection_matrix import parse_ATIS, combine_parsed_ATIS, gather_all_ATIS_log
+from SpiNNiCub.connection_matrix import parse_ATIS, combine_parsed_ATIS, gather_all_ATIS_log
 
 warnings.filterwarnings("error")
 
@@ -52,7 +52,7 @@ def plot_spikes(file_location, file_name):
     plt.title('{}'.format(label))
     plt.show()
 
-    print "plotting"
+    print("plotting")
 
 def create_gaussians(filter_size):
     x, y = np.mgrid[-1.0:1.0:complex(0, filter_size), -1.0:1.0:complex(0, filter_size)]
@@ -102,11 +102,11 @@ def parse_filter_data(file_location, file_name, filter_sizes):
                 break
         [x, y, maxx, maxy] = corner_list['{}'.format(spike_filter_size)][0][int(spike[2])]
         if 0 > x > 304 or 0 < y > 240:
-            print "hol up"
+            print("hol up")
         x -= spike_filter_size / 2
         y -= spike_filter_size / 2
         if 0 > x > 304 or 0 < y > 240:
-            print "hol up"
+            print("hol up")
         spike_time = int(float(spike[3]))
         video_dict['f{}-r{}'.format(spike_filter_size, rotation)].append([x, y, spike_time, spike_filter_size])
     return video_dict
@@ -123,7 +123,7 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             spike_data = np.load("{}/filter rotations spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
 
-    print "parsing data"
+    print("parsing data")
     list_data = []
     x = []
     y = []
@@ -145,12 +145,12 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
     for filter_size in filter_sizes:
         filter_gaussians['{}'.format(filter_size)] = create_gaussians(filter_size)
 
-    print "binning frames"
+    print("binning frames")
     binned_frames = [[[0 for y in range(y_res)] for x in range(x_res)] for i in range(int(np.ceil(max_time / frame_duration)))]
 
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -168,8 +168,8 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             gaussian = filter_gaussians['{}'.format(filter_size)]
             for i in range(len(gaussian)):
                 for j in range(len(gaussian[0])):
-                    new_x = x + i - (filter_size / 2)
-                    new_y = y + j - (filter_size / 2)
+                    new_x = int(x + i - (filter_size / 2))
+                    new_y = int(y + j - (filter_size / 2))
                     if 0 <= new_x < x_res and 0 <= new_y < y_res:
                         binned_frames[time_index][new_x][new_y] += gaussian[i][j]
         progression_count += 1
@@ -180,13 +180,13 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print 'creating images'
+    print('creating images')
     xlim = 304
     ylim = 240
     filenames = []
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -207,7 +207,7 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print "creating video"
+    print("creating video")
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
@@ -235,7 +235,7 @@ def parse_events_to_spike_times(events):
 def process_movement(file_location, file_name, frame_rate):
     spike_times = np.load("{}/extracted move spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
-    print "parsing data"
+    print("parsing data")
     list_data = []
     max_time = 0.
     for spike_data in spike_times:
@@ -245,12 +245,12 @@ def process_movement(file_location, file_name, frame_rate):
             max_time = spike_time
     list_data.sort(key=lambda x: x[2])
 
-    print "binning frames"
+    print("binning frames")
     binned_frames = [[[0 for y in range(3)] for x in range(3)] for i in range(int(np.ceil(max_time / frame_duration)))]
 
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -270,13 +270,13 @@ def process_movement(file_location, file_name, frame_rate):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print 'creating images'
+    print('creating images')
     xlim = 304
     ylim = 240
     filenames = []
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -297,7 +297,7 @@ def process_movement(file_location, file_name, frame_rate):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print "creating video"
+    print("creating video")
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
@@ -372,7 +372,7 @@ if __name__ == '__main__':
         all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
         combined_events = []
         for directory in all_directories:
-            print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+            print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
             combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
         events = combine_parsed_ATIS(combined_events)
         spikes = parse_events_to_spike_times(events)
@@ -381,7 +381,7 @@ if __name__ == '__main__':
         all_directories = []
         for root, dirs, files in os.walk('ATIS'):
             if 'decoded_events.txt' in files:
-                print root
+                print(root)
                 events = parse_ATIS(root, 'decoded_events.txt')
                 spikes = parse_events_to_spike_times(events)
                 if 'videos' not in dirs:
@@ -435,8 +435,11 @@ if __name__ == '__main__':
         if self_excite:
             label += ' self-{}'.format(self_excite)
         label += ' {}'.format(filter_sizes)
-        label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-False [100, 70, 55, 40]'
-        print label
+        # label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-False [100, 70, 55, 40]'
+        # label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [70, 55, 40]'
+        label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
+        filter_sizes = [104, 73, 51, 36]
+        print(label)
         create_video("run_data", label, 2, proto=True)
         # process_movement("run_data", label, 2)
     else:
@@ -476,7 +479,7 @@ if __name__ == '__main__':
                 if self_excite:
                     label += ' self-{}'.format(self_excite)
                 label += ' {}'.format(filter_sizes)
-                print label
+                print(label)
                 create_video("run_data", label, 2)
                 # process_movement("run_data", label, 2)
 
@@ -495,7 +498,7 @@ if __name__ == '__main__':
 #                                                                                            inhib, filter_sizes)
 #     create_video("run_data", label, 2)
 
-print "done"
+print("done")
 
 '''
 proto spikes for testing inhibition

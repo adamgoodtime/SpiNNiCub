@@ -195,14 +195,14 @@ def parse_event_class(eventsON, eventsOFF):
         y = event.y
         timestamp = event.timestamp / 1000.
         polarity = event.polarity
-        print x, y, timestamp
+        print(x, y, timestamp)
         events[convert_pixel_to_id(x, y)].append(timestamp)
     for event in eventsOFF:
         x = event.x
         y = event.y
         timestamp = event.timestamp / 1000.
         polarity = event.polarity
-        print x, y, timestamp
+        print(x, y, timestamp)
         events[convert_pixel_to_id(x, y)].append(timestamp)
     return events
 
@@ -264,7 +264,7 @@ def fake_circle_moving(direction, r=30, mspp=1, speed=1, start_time=0, circle_co
         speed_y = 0
         steps = x_res - (r * 2)
     else:
-        print "incorrect direction"
+        print("incorrect direction")
         Exception
     if circle_contrast == 'black':
         pixel_values = [[1 for i in range(y_res)] for j in range(x_res)]
@@ -318,5 +318,5 @@ if __name__ == '__main__':
 
     events = parse_event_class(on, off)
 
-    print "done"
+    print("done")
 

@@ -10,15 +10,15 @@ from os.path import join, getsize
 # import yarp
 import warnings
 import spynnaker8 as p
-from ATIS.decode_events import *
+from SpiNNiCub.ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
-from generate_events import FakeStimuliBarMoving, fake_circle_moving
+from SpiNNiCub.generate_events import FakeStimuliBarMoving, fake_circle_moving
 
 from pacman.model.constraints.key_allocator_constraints import FixedKeyAndMaskConstraint
 from pacman.model.graphs.application import ApplicationSpiNNakerLinkVertex
 from pacman.model.routing_info import BaseKeyAndMask
-from spinn_front_end_common.abstract_models.abstract_provides_n_keys_for_partition import AbstractProvidesNKeysForPartition
+# from spinn_front_end_common.abstract_models.abstract_provides_n_keys_for_partition import AbstractProvidesNKeysForPartition
 from spinn_front_end_common.abstract_models.abstract_provides_outgoing_partition_constraints import AbstractProvidesOutgoingPartitionConstraints
 from spinn_utilities.overrides import overrides
 from spinn_front_end_common.abstract_models.abstract_provides_incoming_partition_constraints import AbstractProvidesIncomingPartitionConstraints
@@ -312,7 +312,7 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
         filter_split_matrix.append(split_row)
         filter_matrix.append(filter_row)
         inhibitory_matrix.append(inhibitory_row)
-        inhibitory_matrix.append(inhibitory_row)
+        # inhibitory_matrix.append(inhibitory_row)
         xs.append(x)
         ys.append(y)
 
@@ -513,7 +513,7 @@ def combine_parsed_ATIS(event_list):
     else:
         events = [[] for i in range(x_res*y_res)]
     for data_set in event_list:
-        print 'combining', event_list.index(data_set) + 1, '/', len(event_list)
+        print('combining', event_list.index(data_set) + 1, '/', len(event_list))
         for neuron_id in range(len(data_set)):
             for time in range(len(data_set[neuron_id])):
                 new_time = data_set[neuron_id][time] + time_offset
@@ -521,7 +521,7 @@ def combine_parsed_ATIS(event_list):
                 if new_time > max_time:
                     max_time = new_time
         time_offset = max_time
-    print 'maximum time after combining was', np.ceil(max_time)
+    print('maximum time after combining was', np.ceil(max_time))
     return events
 
 def gather_all_ATIS_log(top_directory):
@@ -666,7 +666,7 @@ if __name__ == '__main__':
     # connection configurations: #
     ##############################
     # filter_sizes = [30, 46, 70, 100]
-    filter_sizes = [100, 70, 55, 40]
+    filter_sizes = [70, 55, 40]
     # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
     # filter_sizes = [46, 30]
     list_of_filter_sizes = []
@@ -688,7 +688,7 @@ if __name__ == '__main__':
     self_excite = 0.
 
     simulate = 'proto'
-    fake_full_ATIS = True
+    fake_full_ATIS = False
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
@@ -704,7 +704,7 @@ if __name__ == '__main__':
         label += ' self-{}'.format(self_excite)
     label += ' {}'.format(filter_sizes)
 
-    print "\nCreating events for", label
+    print("\nCreating events for", label)
     # extract input data
     # dm = DataManager()
     # dm.load_AE_from_yarp('ATIS')
@@ -722,9 +722,9 @@ if __name__ == '__main__':
             locations = ['RL', 'LR', 'BT', 'TB']
             combined_events = []
             for contrast in contrasts:
-                print contrast, ':'
+                print(contrast, ':')
                 for location in locations:
-                    print "\t", location
+                    print("\t", location)
                     combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
         else:
@@ -737,28 +737,28 @@ if __name__ == '__main__':
             elif simulate == 'no_proto':
                 all_directories = gather_all_ATIS_log('ATIS/(no)proto_object/no_obj')
             else:
-                print "incorrect stimulus setting"
+                print("incorrect stimulus setting")
                 Exception
             combined_events = []
             for directory in all_directories:
-                print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+                print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
                 combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
-        print "Events created"
+        print("Events created")
         runtime = 0
         for neuron_id in range(len(events)):
             for time in events[neuron_id]:
                 if time > runtime:
                     runtime = time
         runtime = int(np.ceil(runtime)) + 1000
-        print "running for", runtime, "ms"
+        print("running for", runtime, "ms")
         p.setup(timestep=1.0)
         if fake_full_ATIS:
             vis_pop = p.Population(np.power(2, 20), p.SpikeSourceArray(events), label='pop_in')
         else:
             vis_pop = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='pop_in')
     else:
-        print "running until enter is pressed"
+        print("running until enter is pressed")
         p.setup(timestep=1.0)
         vis_pop = p.Population(None, ICUBInputVertex(spinnaker_link_id=0), label='pop_in')
     p.set_number_of_neurons_per_core(p.IF_curr_exp(), 64)
@@ -779,12 +779,12 @@ if __name__ == '__main__':
     all_proto_object_pops = []
     projection_list = []
     for filter in list_of_filter_sizes:
-        print "SpiNN setup for filter", filter
+        print("SpiNN setup for filter", filter)
         # for each rotation, 0 -> 7pi/4
         filter_segments = []
         filter_populations = []
         for rotation in range(8):
-            print "Rotation", rotation+1, "/ 8"
+            print("Rotation", rotation+1, "/ 8")
             if not kernel:
                 segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
                                                                                              overlap=overlap,
@@ -826,11 +826,11 @@ if __name__ == '__main__':
                     shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
-                print "shape_pre", shape_pre
-                print "shape_post", shape_post
-                print "shape_kernel", shape_kernel
-                print "pre_sample_steps", pre_sample_steps
-                print "start_location", start_location
+                print("shape_pre", shape_pre)
+                print("shape_post", shape_post)
+                print("shape_kernel", shape_kernel)
+                print("pre_sample_steps", pre_sample_steps)
+                print("start_location", start_location)
                 for split in range(filter_split):
                     weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
                     weight_kernel = weight_kernel.transpose()
@@ -884,12 +884,12 @@ if __name__ == '__main__':
                 filter_populations[-1].record('spikes')
                 for split in range(filter_split):
                     filter_segments[-1][split].record('spikes')
-            print "number of neurons in segments = ", no_neurons*filter_split
-            print "number of neurons in filters = ", no_neurons
+            print("number of neurons in segments = ", no_neurons*filter_split)
+            print("number of neurons in filters = ", no_neurons)
             # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
 
-        print "total number of neurons in segments = ", no_neurons * 8 * filter_split
-        print "total number of neurons in filters = ", (no_neurons) * 8
+        print("total number of neurons in segments = ", no_neurons * 8 * filter_split)
+        print("total number of neurons in filters = ", (no_neurons) * 8)
         # print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
         # create proto object
         all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
@@ -924,8 +924,8 @@ if __name__ == '__main__':
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
         to_wta_scale = float(len(proto_object_pop))
         from_wta_scale = float(len(proto_object_pop))
-        print 'to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale)
-        print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
+        print('to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale))
+        print("number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop))
         for object in proto_object_pop:
             if simulate:
                 object.record('spikes')
@@ -934,10 +934,10 @@ if __name__ == '__main__':
                 p.Projection(wta_neuron, object, p.FromListConnector([[0, 0, base_weight * (from_wta / to_wta_scale), 1]]), receptor_type='inhibitory')
             if self_excite:
                 p.Projection(object, object, p.FromListConnector([[0, 0, base_weight * self_excite, 1]]))
-    print "generating move pop"
+    print("generating move pop")
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
 
-    print "running"
+    print("running")
     if simulate:
         move_pop.record('spikes')
 
@@ -961,9 +961,9 @@ if __name__ == '__main__':
         #     out_port.write()
         p.external_devices.run_forever()
         # stop recording
-        raw_input('Press enter to stop')
+        input('Press enter to stop')
 
-    print "saving"
+    print("saving")
     boarder_data = boarder_population.get_data()
     np.save('board pop data {}.npy'.format(label), boarder_data)
 
@@ -994,7 +994,7 @@ if __name__ == '__main__':
 
     move_data = move_pop.get_data()
     np.save('movement data {}.npy'.format(label), move_data)
-    print "all saved"
+    print("all saved")
 
     filter_segment_spikes = [0 for i in range(len(filter_sizes))]
     for filter_idx, filter_segments_data in enumerate(all_filter_segments_data):
@@ -1002,7 +1002,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_segment_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size)
     filter_pop_spikes = [0 for i in range(len(filter_sizes))]
     # filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
@@ -1011,7 +1011,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_pop_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size)
             # if filter_pop_spikes[filter_idx]:
             #     spike_times = spikes[0].magnitude
             #     for spike_time in spike_times:
@@ -1027,7 +1027,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 object_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size)
                 split_data = pop[1].split('-')
                 spike_data = pop[0].segments[0].spiketrains
                 spikes = 0
@@ -1044,15 +1044,15 @@ if __name__ == '__main__':
                             spike_count['({}, {})'.format(x, y)] = 1
         all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
     for filter_size in all_spike_count:
-        print "filter size:", filter_size
+        print("filter size:", filter_size)
         for location in all_spike_count[filter_size]:
-            print location, all_spike_count[filter_size][location]
+            print(location, all_spike_count[filter_size][location])
     np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
-    print '\nup = 0, down = 1, left = 2, right = 3'
+    print('\nup = 0, down = 1, left = 2, right = 3')
     direction_key = {'0': [1, 2], '1': [1, 0], '2': [0, 1], '3': [2, 1]}
     move_spike_data = []
     for idx, neuron in enumerate(move_data.segments[0].spiketrains):
-        print 'direction: {} - spikes: {}'.format(idx, neuron.size)
+        print('direction: {} - spikes: {}'.format(idx, neuron.size))
         if neuron.size:
             spike_times = neuron.magnitude
             for spike_time in spike_times:
@@ -1064,17 +1064,17 @@ if __name__ == '__main__':
     spikes = boarder_data.segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         boarder_spikes += neuron.size
-        print id2, "boarder spike count:", neuron.size
-    print "total boarder spikes:", boarder_spikes
+        print(id2, "boarder spike count:", neuron.size)
+    print("total boarder spikes:", boarder_spikes)
     for idx, filter_size in enumerate(filter_sizes):
-        print "total spikes for {}:\n" \
+        print("total spikes for {}:\n" \
               "filter size: {}\n" \
               "segment: {}\n" \
               "filter: {}\n" \
               "objects: {}".format(label, filter_size,
                                    filter_segment_spikes[idx],
                                    filter_pop_spikes[idx],
-                                   object_spikes[idx])
+                                   object_spikes[idx]))
 
     filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
@@ -1093,7 +1093,7 @@ if __name__ == '__main__':
                     for spike_time in spike_times:
                         # idx = rotation, id2 = neuron id for that rotation
                         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-                    print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
+                    print(pop[1], ":", idx, "-", id2, "pop spike count:", spike_count)
             # if spike_count:
             #     print 'spikes were found'
             #     spike_times = spikes[0].magnitude
@@ -1104,16 +1104,16 @@ if __name__ == '__main__':
             #         # idx = rotation, id2 = neuron id for that rotation
             #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
             if filter_spikes_times:
-                print 'last entry = ', filter_spikes_times[-1]
+                print('last entry = ', filter_spikes_times[-1])
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     if WTA:
         wta_spikes = wta_neuron.get_data()
-        print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
+        print('wta_spikes:', wta_spikes.segments[0].spiketrains[0].size)
 
     p.end()
 
-    print "done"
+    print("done")
 
 
 
