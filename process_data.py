@@ -9,15 +9,18 @@ from scipy.stats import norm
 from mpl_toolkits.mplot3d import Axes3D
 import warnings
 import spynnaker8 as p
-from ATIS.decode_events import *
+from SpiNNiCub.ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
 import imageio
 from scipy.stats import multivariate_normal
 import sys
-from connection_matrix import parse_ATIS, combine_parsed_ATIS, gather_all_ATIS_log
+from SpiNNiCub.connection_matrix import parse_ATIS, combine_parsed_ATIS, gather_all_ATIS_log
 
 warnings.filterwarnings("error")
+
+def rotate_matrix_90_anticlockwise(m):
+    return [[m[j][i] for j in range(len(m))] for i in range(len(m[0])-1, -1, -1)]
 
 def plot_spikes(file_location, file_name):
     spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
@@ -52,7 +55,7 @@ def plot_spikes(file_location, file_name):
     plt.title('{}'.format(label))
     plt.show()
 
-    print "plotting"
+    print("plotting")
 
 def create_gaussians(filter_size):
     x, y = np.mgrid[-1.0:1.0:complex(0, filter_size), -1.0:1.0:complex(0, filter_size)]
@@ -89,7 +92,8 @@ def parse_filter_data(file_location, file_name, filter_sizes):
     corner_list = {}
     video_dict = {}
     for filter_size in filter_sizes:
-        corner_list['{}'.format(filter_size)] = create_filter_boundaries(filter_size, filter_size, 0.6)
+        relative_overlap = 10. / filter_size
+        corner_list['{}'.format(filter_size)] = create_filter_boundaries(filter_size, filter_size, relative_overlap)
         for rotation in range(8):
             video_dict['f{}-r{}'.format(filter_size, rotation)] = []
     filter_data = np.load("{}/{}".format(file_location, file_name))
@@ -102,19 +106,20 @@ def parse_filter_data(file_location, file_name, filter_sizes):
                 break
         [x, y, maxx, maxy] = corner_list['{}'.format(spike_filter_size)][0][int(spike[2])]
         if 0 > x > 304 or 0 < y > 240:
-            print "hol up"
+            print("hol up")
         x -= spike_filter_size / 2
         y -= spike_filter_size / 2
         if 0 > x > 304 or 0 < y > 240:
-            print "hol up"
+            print("hol up")
         spike_time = int(float(spike[3]))
         video_dict['f{}-r{}'.format(spike_filter_size, rotation)].append([x, y, spike_time, spike_filter_size])
     return video_dict
 
-def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
+def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, rotate=False):
     if spikes:
         spike_data = spikes
         if spike_data == []:
+            print("no spike data from list\nexiting without creating images and video")
             return None
     else:
         if proto:
@@ -122,8 +127,11 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
         else:
             spike_data = np.load("{}/filter rotations spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
+    if not len(spike_data) > 0:
+        print("no spike data\nexiting without creating images and video")
+        return None
 
-    print "parsing data"
+    print("parsing data")
     list_data = []
     x = []
     y = []
@@ -145,31 +153,35 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
     for filter_size in filter_sizes:
         filter_gaussians['{}'.format(filter_size)] = create_gaussians(filter_size)
 
-    print "binning frames"
+    print("binning frames")
     binned_frames = [[[0 for y in range(y_res)] for x in range(x_res)] for i in range(int(np.ceil(max_time / frame_duration)))]
 
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
     current_point = 0
     progression_count = 0
     for spike in list_data:
-        x = int(spike[0])
-        y = int(spike[1])
+        x = int(round(spike[0]))
+        y = int(round(spike[1]))
         t = spike[2]
         filter_size = int(spike[3])
         time_index = int(t / frame_duration)
+        if time_index == len(binned_frames):
+            time_index -= 1
+        elif time_index > len(binned_frames):
+            Exception
         if filter_sizes[0] == 1:
             binned_frames[time_index][x][y] += 1
         else:
             gaussian = filter_gaussians['{}'.format(filter_size)]
             for i in range(len(gaussian)):
                 for j in range(len(gaussian[0])):
-                    new_x = x + i - (filter_size / 2)
-                    new_y = y + j - (filter_size / 2)
+                    new_x = x + i - int(filter_size / 2)
+                    new_y = y + j - int(filter_size / 2)
                     if 0 <= new_x < x_res and 0 <= new_y < y_res:
                         binned_frames[time_index][new_x][new_y] += gaussian[i][j]
         progression_count += 1
@@ -180,24 +192,31 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print 'creating images'
+    print('creating images')
     xlim = 304
     ylim = 240
     filenames = []
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
     current_point = 0
     progression_count = 0
     for frame in binned_frames:
-        plt.imshow(frame, cmap='hot', interpolation='nearest')
+        if rotate:
+            new_frame = rotate_matrix_90_anticlockwise(frame)
+        else:
+            new_frame = frame
+        # plt.figure(frameon=False)
+        plt.imshow(new_frame, cmap= 'hot', interpolation='nearest', aspect='auto')
         title = '{} - {}'.format(file_name, binned_frames.index(frame))
-        title += '.jpg'
-        filenames.append(file_location+'/videos/'+title)
-        plt.savefig(file_location+'/videos/'+title, format='jpeg', bbox_inches='tight')
+        title += '.png'
+        filenames.append(file_location+'/pictures_and_gifs/'+title)
+        plt.axis('off')
+        imageio.imsave(file_location+'/pictures_and_gifs/'+title, new_frame)
+        # plt.savefig(file_location+'/videos/'+title, format='png', bbox_inches='tight', pad_inches=0)
         # plt.show()
         plt.clf()
         progression_count += 1
@@ -207,11 +226,11 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print "creating video"
+    print("creating video")
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
-    imageio.mimsave(file_location+'/videos/'+file_name+'.gif', images)
+    imageio.mimsave(file_location+'/pictures_and_gifs/videos/'+file_name+'.gif', images)
 
     # for file in filenames:
     #     os.remove(file)
@@ -235,7 +254,7 @@ def parse_events_to_spike_times(events):
 def process_movement(file_location, file_name, frame_rate):
     spike_times = np.load("{}/extracted move spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
-    print "parsing data"
+    print("parsing data")
     list_data = []
     max_time = 0.
     for spike_data in spike_times:
@@ -245,12 +264,12 @@ def process_movement(file_location, file_name, frame_rate):
             max_time = spike_time
     list_data.sort(key=lambda x: x[2])
 
-    print "binning frames"
+    print("binning frames")
     binned_frames = [[[0 for y in range(3)] for x in range(3)] for i in range(int(np.ceil(max_time / frame_duration)))]
 
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -270,13 +289,13 @@ def process_movement(file_location, file_name, frame_rate):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print 'creating images'
+    print('creating images')
     xlim = 304
     ylim = 240
     filenames = []
     # setup toolbar
     toolbar_width = 40
-    print '[{}]'.format('-'*toolbar_width)
+    print('[{}]'.format('-'*toolbar_width))
     sys.stdout.write("[%s]" % (" " * toolbar_width))
     sys.stdout.flush()
     sys.stdout.write("\b" * (toolbar_width + 1))  # return to start of line, after '['
@@ -297,7 +316,7 @@ def process_movement(file_location, file_name, frame_rate):
             sys.stdout.flush()
     sys.stdout.write("]\n")
 
-    print "creating video"
+    print("creating video")
     images = []
     for filename in filenames:
         images.append(imageio.imread(filename))
@@ -335,8 +354,9 @@ if __name__ == '__main__':
     to_wta = 1.
     from_wta = 1.
     self_excite = 0.01
+    fake_full_ATIS = False
 
-    simulate = 'subset'
+    simulate = 'solo'
     # simulate = None
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                         base_weight,
@@ -369,19 +389,20 @@ if __name__ == '__main__':
 
     video_of = 'solo'
     if video_of == 'raw':
-        all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
+        all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
         combined_events = []
         for directory in all_directories:
-            print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+            print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
             combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
         events = combine_parsed_ATIS(combined_events)
         spikes = parse_events_to_spike_times(events)
-        create_video('run_data', 'All ATIS input spikes', 2, spikes=spikes)
+        filter_sizes = [1]
+        create_video('ATIS/IROS_subset', 'All ATIS input spikes', 20, spikes=spikes)
     elif video_of == 'solo_raw':
         all_directories = []
         for root, dirs, files in os.walk('ATIS'):
             if 'decoded_events.txt' in files:
-                print root
+                print(root)
                 events = parse_ATIS(root, 'decoded_events.txt')
                 spikes = parse_events_to_spike_times(events)
                 if 'videos' not in dirs:
@@ -435,10 +456,39 @@ if __name__ == '__main__':
         if self_excite:
             label += ' self-{}'.format(self_excite)
         label += ' {}'.format(filter_sizes)
-        label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-False [100, 70, 55, 40]'
-        print label
+        # label = 'IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
+        # label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [104, 73, 51]'
+        # label = 'proto fs-4 ol-0.9 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
+        label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.03 icp-1.0 ps-0.75 in-all [30, 46, 70, 100]'
+        print(label)
+        # filter_sizes = [104, 73, 51, 36]
+        filter_sizes = [30, 46, 70, 100]
         create_video("run_data", label, 2, proto=True)
         # process_movement("run_data", label, 2)
+    elif video_of == 'IROS':
+        seperated_list = ['calib_circles',
+                          # 'no_obj',
+                          'obj',
+                          '019',
+                          # '029',
+                          # '085',
+                          # '157',
+                          # 'multi_objects_saccade1',
+                          # 'object_clutter',
+                          'object_clutter2',
+                          # 'objects_approaching',
+                          'objects_approaching_no_saccade',
+                          # 'paddle_moving_clutter'
+                          ]
+        filter_sizes = [104, 73, 51, 36]
+        # label = ' IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
+        # label = ' pytorch IROS fs-4 ol-4 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        label = ' pytorch IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
+        count = 1
+        for test in seperated_list:
+            print("starting: " + test + " - {}/{}".format(count, len(seperated_list)))
+            create_video("IROS_data", test+label, 20, proto=True, rotate=True)
+            count += 1
     else:
         sfts = [0.04, 0.02]
         bfts = [0.005, 0.05]
@@ -476,7 +526,7 @@ if __name__ == '__main__':
                 if self_excite:
                     label += ' self-{}'.format(self_excite)
                 label += ' {}'.format(filter_sizes)
-                print label
+                print(label)
                 create_video("run_data", label, 2)
                 # process_movement("run_data", label, 2)
 
@@ -495,7 +545,7 @@ if __name__ == '__main__':
 #                                                                                            inhib, filter_sizes)
 #     create_video("run_data", label, 2)
 
-print "done"
+print("done")
 
 '''
 proto spikes for testing inhibition

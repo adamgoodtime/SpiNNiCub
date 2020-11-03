@@ -10,15 +10,15 @@ from os.path import join, getsize
 # import yarp
 import warnings
 import spynnaker8 as p
-from ATIS.decode_events import *
+from SpiNNiCub.ATIS.decode_events import *
 from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
-from generate_events import FakeStimuliBarMoving, fake_circle_moving
+from SpiNNiCub.generate_events import FakeStimuliBarMoving, fake_circle_moving
 
 from pacman.model.constraints.key_allocator_constraints import FixedKeyAndMaskConstraint
 from pacman.model.graphs.application import ApplicationSpiNNakerLinkVertex
 from pacman.model.routing_info import BaseKeyAndMask
-from spinn_front_end_common.abstract_models.abstract_provides_n_keys_for_partition import AbstractProvidesNKeysForPartition
+#from spinn_front_end_common.abstract_models.abstract_provides_n_keys_for_partition import AbstractProvidesNKeysForPartition
 from spinn_front_end_common.abstract_models.abstract_provides_outgoing_partition_constraints import AbstractProvidesOutgoingPartitionConstraints
 from spinn_utilities.overrides import overrides
 from spinn_front_end_common.abstract_models.abstract_provides_incoming_partition_constraints import AbstractProvidesIncomingPartitionConstraints
@@ -143,7 +143,7 @@ def VM(x, y, r=10, p=0.08, theta=0, threshold=0.75, filter_split=4):
     return VM_output, split
 
 # converts x, y coords to the appropriate neuron ID for running in simulation or live
-def convert_pixel_to_id(x, y):
+def convert_pixel_to_id(x, y, fake_full_ATIS=False):
     if isinstance(simulate, str) and not fake_full_ATIS:
         return (y*x_res) + x
     else:
@@ -151,6 +151,8 @@ def convert_pixel_to_id(x, y):
 
 # creates the list of coords for the highest value of x and y that defines the bounding of all filters possible
 def create_filter_boundaries(filter_width, filter_height, overlap=0.):
+    if overlap_step:
+        overlap = (filter_height - overlap_step) / filter_height
     list_of_corners = []
     i = filter_width + peripheral_x
     x = 0
@@ -270,21 +272,31 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
     kernel_count = [0 for i in range(filter_split)]
     filter_split_matrix = []
     filter_matrix = []
+    filter_matrix2 = []
     inhibitory_matrix = []
     inhib_count = 0
     xs = []
     ys = []
+    # xs2 = []
+    # ys2 = []
+    # filter_centres = create_filter_centres(filter_width)
+    # paired_list = group_filter_centres(filter_width)
+    # corners = create_filter_boundaries(filter_width, filter_height, overlap)
     for i in range(filter_width):
         split_row = []
         filter_row = []
+        # filter_row2 = []
         inhibitory_row = []
         x = []
         y = []
+        # x2 = []
+        # y2 = []
         kernel_row = [[] for k in range(filter_split)]
         for j in range(filter_height):
             x_value = ((float(i) / float(filter_width)) * 2) - 1
             y_value = ((float(j) / float(filter_height)) * 2) - 1
             pixel_value, split = VM(x_value, y_value, theta=rotation, filter_split=filter_split)
+            # pixel_value4, split4 = VM(x_value, y_value, theta=rotation+4, filter_split=filter_split)
             if not pixel_value:
                 inhibitory_row.append(1)
                 inhib_count += 1
@@ -294,9 +306,12 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
             else:
                 inhibitory_row.append(0)
                 split_row.append(split)
-            x.append(x_value)
-            y.append(y_value)
+            x.append(i)#+corners[0][paired_list[rotation][0][0]][0]-(filter_width/2.))
+            y.append(j)#+corners[0][paired_list[rotation][0][0]][1]-(filter_height/2.))
             filter_row.append(pixel_value)
+            # x2.append(i+corners[0][paired_list[rotation][0][1]][0]-(filter_width/2.))
+            # y2.append(j+corners[0][paired_list[rotation][0][1]][1]-(filter_width/2.))
+            # filter_row2.append(pixel_value4)
             for map_split in range(filter_split):
                 if map_split == split and pixel_value:
                     kernel_row[map_split].append(1)
@@ -311,10 +326,13 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
                 kernel_matrixes[map_split].append(kernel_row[map_split])
         filter_split_matrix.append(split_row)
         filter_matrix.append(filter_row)
+        # filter_matrix2.append(filter_row2)
         inhibitory_matrix.append(inhibitory_row)
-        inhibitory_matrix.append(inhibitory_row)
+        # inhibitory_matrix.append(inhibitory_row)
         xs.append(x)
         ys.append(y)
+        # xs2.append(x2)
+        # ys2.append(y2)
 
     corners_list, max_filters_x, max_filters_y = create_filter_boundaries(filter_width, filter_height, overlap)
 
@@ -324,8 +342,11 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
     if plot:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_split_matrix))
-        # ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_matrix))
+        # ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_split_matrix))
+        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_matrix))
+        # ax.plot_wireframe(np.array(xs2), np.array(ys2), np.array(filter_matrix2))
+        ax.set_xlim([0, 250])
+        ax.set_ylim([0, 250])
         plt.show()
 
     return kernel_matrixes, number_of_neurons, [max_filters_y, max_filters_x], kernel_count, inhibitory_matrix, inhib_count
@@ -420,10 +441,85 @@ def create_filter_neuron_connections(filter_split, no_neurons, base_weight, perc
         connections.append([i, int(i/filter_split), (base_weight/filter_split)/percentage_fire_threshold, 1])
     return connections
 
+def create_filter_centres(filter_size):
+    if overlap_step:
+        local_overlap = (filter_size - overlap_step) / filter_size
+    else:
+        local_overlap = overlap
+    corners, x, y = create_filter_boundaries(filter_size, filter_size, local_overlap)
+    '''
+    remember from -1 -> 1
+    0 = -0.5, 0
+    1 = -0.35, 0.35
+    2 = 0, 0.5
+    3 = 0.35, 0.35
+    4 = 0.5, 0
+    5 = 0.35, -0.35
+    6 = 0, -0.5
+    7 = -0.35, -0.35
+    '''
+    base_offset = 0.3
+    offsets = [[-base_offset, 0],
+               [-base_offset/np.sqrt(2), base_offset/np.sqrt(2)],
+               [0, base_offset],
+               [base_offset/np.sqrt(2), base_offset/np.sqrt(2)],
+               [base_offset, 0],
+               [base_offset/np.sqrt(2), -base_offset/np.sqrt(2)],
+               [0, -base_offset],
+               [-base_offset/np.sqrt(2), -base_offset/np.sqrt(2)]
+               ]
+    filter_centres = [[] for i in range(8)]
+    for rotation in range(8):
+        x_offset = (-filter_size / 2.) + (offsets[rotation][0] * filter_size)
+        y_offset = (-filter_size / 2.) + (offsets[rotation][1] * filter_size)
+        for corner in corners:
+            filter_centres[rotation].append([corner[0]+x_offset, corner[1]+y_offset])
+
+    return filter_centres
+
+def group_filter_centres(filter_size):
+    filter_centres = create_filter_centres(filter_size)
+    pair_list = [[] for i in range(4)]
+    trimmed_list = [[] for i in range(4)]
+    for rotation in range(4):
+        for idx1, filter_centre_first in enumerate(filter_centres[rotation]):
+            pair = [-1, -1, x_res+y_res, [0, 0]]
+            for idx2, filter_centre_second in enumerate(filter_centres[rotation+4]):
+                distance = np.sqrt(((filter_centre_first[0]-filter_centre_second[0])**2) + ((filter_centre_first[1]-filter_centre_second[1])**2))
+                if distance < pair[2]:
+                    pair[0] = idx1
+                    pair[1] = idx2
+                    pair[2] = distance
+                    pair[3] = [(filter_centre_first[0]+filter_centre_second[0])/2., (filter_centre_first[1]+filter_centre_second[1])/2.]
+            pair_list[rotation].append(pair)
+        minimum_distance = min(pair_list[rotation], key=lambda x: x[2])[2]
+        for pair in pair_list[rotation]:
+            if pair[2] <= minimum_distance + 1:
+                trimmed_list[rotation].append(pair)
+    return trimmed_list
+
+def new_proto_objects(pop_1, pop_2, filter_size, base_weight, weight_scale=0.5):
+    filter_connections = group_filter_centres(filter_size)
+    proto_object_neurons = []
+    for idx, orient in enumerate(filter_connections):
+        for conn in orient:
+            proto_object_neurons.append(p.Population(1, p.IF_curr_exp(*neuron_params),
+                                                     label='{}-{}'.format(conn[3][0], conn[3][1])))
+            a = conn[0]
+            b = conn[1]
+            p.Projection(pop_1[idx], proto_object_neurons[-1],
+                         p.FromListConnector([[a, 0, base_weight * weight_scale, 1]]))
+            p.Projection(pop_2[idx+4], proto_object_neurons[-1],
+                         p.FromListConnector([[b, 0, base_weight * weight_scale, 1]]))
+    return proto_object_neurons
+
 # creates the list of proto-objects and connects the necessary rotations of filters together
 def proto_objects(population_1, population_2, filter_width, filter_height, base_weight, weight_scale=0.5):
-    max_filters_x_wrong = int((x_res - peripheral_x*2) / (filter_width * (1-overlap)))
-    max_filters_y_wrong = int((y_res - peripheral_y*2) / (filter_height * (1-overlap)))
+    global overlap
+    # max_filters_x_wrong = int((x_res - peripheral_x*2) / (filter_width * (1-overlap)))
+    # max_filters_y_wrong = int((y_res - peripheral_y*2) / (filter_height * (1-overlap)))
+    if overlap_step:
+        overlap = (filter_height - overlap_step) / filter_height
     rubbish, max_filters_x, max_filters_y = create_filter_boundaries(filter_width, filter_height, overlap)
     proto_object_neurons = []
     # create the connections and populations
@@ -463,6 +559,8 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
     filter_y = float(filter_y)
     filter_width = float(filter_size)
     filter_height = float(filter_size)
+    if overlap_step:
+        overlap = (filter_height - overlap_step) / filter_height
     if direction == 'ver':
         offset_x = 0
         offset_y = (filter_height / 2.) * (1.-overlap)
@@ -485,7 +583,7 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
 
     return x, y
 
-def parse_ATIS(file_location, file_name):
+def parse_ATIS(file_location, file_name, fake_full_ATIS=False):
     f = open("{}/{}".format(file_location, file_name), "r")
     if fake_full_ATIS:
         events = [[] for i in range(np.power(2, 20))]
@@ -505,7 +603,7 @@ def parse_ATIS(file_location, file_name):
             events[convert_pixel_to_id(int(line[2]), int(line[3]))].append(time)
     return events
 
-def combine_parsed_ATIS(event_list):
+def combine_parsed_ATIS(event_list, fake_full_ATIS=False):
     time_offset = 0
     max_time = 0
     if fake_full_ATIS:
@@ -513,7 +611,7 @@ def combine_parsed_ATIS(event_list):
     else:
         events = [[] for i in range(x_res*y_res)]
     for data_set in event_list:
-        print 'combining', event_list.index(data_set) + 1, '/', len(event_list)
+        print('combining', event_list.index(data_set) + 1, '/', len(event_list))
         for neuron_id in range(len(data_set)):
             for time in range(len(data_set[neuron_id])):
                 new_time = data_set[neuron_id][time] + time_offset
@@ -521,7 +619,7 @@ def combine_parsed_ATIS(event_list):
                 if new_time > max_time:
                     max_time = new_time
         time_offset = max_time
-    print 'maximum time after combining was', np.ceil(max_time)
+    print('maximum time after combining was', np.ceil(max_time))
     return events
 
 def gather_all_ATIS_log(top_directory):
@@ -647,6 +745,20 @@ y_res = 240
 simulate = 'real'
 
 if __name__ == '__main__':
+    seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
+                      'ATIS/IROS_from Giulia/no_obj',  # 1
+                      'ATIS/IROS_from Giulia/obj',  # 2
+                      'ATIS/IROS_from Giulia/019',  # 3
+                      'ATIS/IROS_from Giulia/029',  # 4
+                      'ATIS/IROS_from Giulia/085',  # 5
+                      'ATIS/IROS_from Giulia/157',  # 6
+                      'ATIS/IROS_from Giulia/multi_objects_saccade1',  # 7
+                      'ATIS/IROS_from Giulia/object_clutter',  # 8
+                      'ATIS/IROS_from Giulia/object_clutter2',  # 9
+                      'ATIS/IROS_from Giulia/objects_approaching',  # 10
+                      'ATIS/IROS_from Giulia/objects_approaching_no_saccade',  # 11
+                      'ATIS/IROS_from Giulia/paddle_moving_clutter'  # 12
+                      ]
     fovea_x = 300
     fovea_y = 236
     # min for 1 board
@@ -657,7 +769,7 @@ if __name__ == '__main__':
     horizontal_split = 1
     veritcal_split = 1
 
-    kernel = True
+    kernel = False
 
     neuron_params = {
         # balance the refractory period/tau_mem so membrane has lost contribution before next spike
@@ -665,8 +777,10 @@ if __name__ == '__main__':
     ##############################
     # connection configurations: #
     ##############################
-    # filter_sizes = [30, 46, 70, 100]
-    filter_sizes = [100, 70, 55, 40]
+    filter_sizes = [30, 46, 70]
+    # filter_sizes = [100, 70, 55, 40]
+    # filter_sizes = [104, 73, 51, 36, 25]  # pytorch
+    # filter_sizes = [104, 73, 51, 36]
     # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
     # filter_sizes = [46, 30]
     list_of_filter_sizes = []
@@ -674,11 +788,12 @@ if __name__ == '__main__':
         list_of_filter_sizes.append([filter_size, filter_size])
     filter_split = 4
     overlap = 0.6
+    overlap_step = 0
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.02
+    segment_percentage_fire_threshold = 0.03
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.02
+    inhib_percentage_fire_threshold = 0.03
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -688,8 +803,11 @@ if __name__ == '__main__':
     self_excite = 0.
 
     simulate = 'proto'
-    fake_full_ATIS = True
+    data_list_index = 12
+    fake_full_ATIS = False  # functions have had this forced, be careful
     # simulate = None
+    if overlap_step:
+        overlap = overlap_step
     label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
                                                                                        boarder_percentage_fire_threshold,
@@ -704,7 +822,7 @@ if __name__ == '__main__':
         label += ' self-{}'.format(self_excite)
     label += ' {}'.format(filter_sizes)
 
-    print "\nCreating events for", label
+    print("\nCreating events for", label)
     # extract input data
     # dm = DataManager()
     # dm.load_AE_from_yarp('ATIS')
@@ -722,9 +840,9 @@ if __name__ == '__main__':
             locations = ['RL', 'LR', 'BT', 'TB']
             combined_events = []
             for contrast in contrasts:
-                print contrast, ':'
+                print(contrast, ':')
                 for location in locations:
-                    print "\t", location
+                    print("\t", location)
                     combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
         else:
@@ -736,32 +854,39 @@ if __name__ == '__main__':
                 all_directories = gather_all_ATIS_log('ATIS/(no)proto_object')
             elif simulate == 'no_proto':
                 all_directories = gather_all_ATIS_log('ATIS/(no)proto_object/no_obj')
+            elif simulate == 'IROS':
+                # all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
+                all_directories = gather_all_ATIS_log(seperated_list[data_list_index])
+                label = seperated_list[data_list_index][22:] + ' ' + label
             else:
-                print "incorrect stimulus setting"
+                print("incorrect stimulus setting")
                 Exception
             combined_events = []
             for directory in all_directories:
-                print 'extracting directory', all_directories.index(directory) + 1, '/', len(all_directories)
+                print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
                 combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
-        print "Events created"
+        print("Events created")
         runtime = 0
         for neuron_id in range(len(events)):
             for time in events[neuron_id]:
                 if time > runtime:
                     runtime = time
         runtime = int(np.ceil(runtime)) + 1000
-        print "running for", runtime, "ms"
+        print("running for", runtime, "ms")
+        if runtime < 2000:
+            print("too short")
         p.setup(timestep=1.0)
         if fake_full_ATIS:
             vis_pop = p.Population(np.power(2, 20), p.SpikeSourceArray(events), label='pop_in')
         else:
             vis_pop = p.Population(x_res*y_res, p.SpikeSourceArray(events), label='pop_in')
     else:
-        print "running until enter is pressed"
+        print("running until enter is pressed")
         p.setup(timestep=1.0)
         vis_pop = p.Population(None, ICUBInputVertex(spinnaker_link_id=0), label='pop_in')
     p.set_number_of_neurons_per_core(p.IF_curr_exp(), 64)
+    print(label)
     # create boarder connections and populations
     boarder_connections = create_peripheral_mapping(base_weight=base_weight,
                                                     percentage_fire_threshold=boarder_percentage_fire_threshold,
@@ -779,12 +904,12 @@ if __name__ == '__main__':
     all_proto_object_pops = []
     projection_list = []
     for filter in list_of_filter_sizes:
-        print "SpiNN setup for filter", filter
+        print("SpiNN setup for filter", filter)
         # for each rotation, 0 -> 7pi/4
         filter_segments = []
         filter_populations = []
         for rotation in range(8):
-            print "Rotation", rotation+1, "/ 8"
+            print("Rotation", rotation+1, "/ 8")
             if not kernel:
                 segment_connection, inhib_connection, no_neurons = visual_field_with_overlap(filter[0], filter[1],
                                                                                              overlap=overlap,
@@ -826,11 +951,11 @@ if __name__ == '__main__':
                     shape_kernel = np.asarray(filter)
                 pre_sample_steps = shape_kernel * (1. - overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
-                print "shape_pre", shape_pre
-                print "shape_post", shape_post
-                print "shape_kernel", shape_kernel
-                print "pre_sample_steps", pre_sample_steps
-                print "start_location", start_location
+                print("shape_pre", shape_pre)
+                print("shape_post", shape_post)
+                print("shape_kernel", shape_kernel)
+                print("pre_sample_steps", pre_sample_steps)
+                print("start_location", start_location)
                 for split in range(filter_split):
                     weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
                     weight_kernel = weight_kernel.transpose()
@@ -884,15 +1009,18 @@ if __name__ == '__main__':
                 filter_populations[-1].record('spikes')
                 for split in range(filter_split):
                     filter_segments[-1][split].record('spikes')
-            print "number of neurons in segments = ", no_neurons*filter_split
-            print "number of neurons in filters = ", no_neurons
+            print("number of neurons in segments = ", no_neurons*filter_split)
+            print("number of neurons in filters = ", no_neurons)
             # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
 
-        print "total number of neurons in segments = ", no_neurons * 8 * filter_split
-        print "total number of neurons in filters = ", (no_neurons) * 8
+        print("total number of neurons in segments = ", no_neurons * 8 * filter_split)
+        print("total number of neurons in filters = ", (no_neurons) * 8)
         # print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
         # create proto object
-        all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
+        # all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
+        all_proto_object_pops.append(new_proto_objects(filter_populations, filter_populations, filter[0], base_weight,
+                                                       weight_scale=proto_scale))
+
         all_filter_segments.append(filter_segments)
         all_filter_populations.append(filter_populations)
         # opposite inhibition for filter segments
@@ -924,8 +1052,8 @@ if __name__ == '__main__':
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
         to_wta_scale = float(len(proto_object_pop))
         from_wta_scale = float(len(proto_object_pop))
-        print 'to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale)
-        print "number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop)
+        print('to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale))
+        print("number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop))
         for object in proto_object_pop:
             if simulate:
                 object.record('spikes')
@@ -934,14 +1062,15 @@ if __name__ == '__main__':
                 p.Projection(wta_neuron, object, p.FromListConnector([[0, 0, base_weight * (from_wta / to_wta_scale), 1]]), receptor_type='inhibitory')
             if self_excite:
                 p.Projection(object, object, p.FromListConnector([[0, 0, base_weight * self_excite, 1]]))
-    print "generating move pop"
+    print("generating move pop")
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
 
-    print "running"
+    print("running")
     if simulate:
         move_pop.record('spikes')
 
     # p.run(runtime)
+    print(label)
     if isinstance(simulate, str):
         p.run(runtime)
     else:
@@ -961,9 +1090,9 @@ if __name__ == '__main__':
         #     out_port.write()
         p.external_devices.run_forever()
         # stop recording
-        raw_input('Press enter to stop')
-
-    print "saving"
+        input('Press enter to stop')
+    print(label)
+    print("saving")
     boarder_data = boarder_population.get_data()
     np.save('board pop data {}.npy'.format(label), boarder_data)
 
@@ -994,7 +1123,7 @@ if __name__ == '__main__':
 
     move_data = move_pop.get_data()
     np.save('movement data {}.npy'.format(label), move_data)
-    print "all saved"
+    print("all saved")
 
     filter_segment_spikes = [0 for i in range(len(filter_sizes))]
     for filter_idx, filter_segments_data in enumerate(all_filter_segments_data):
@@ -1002,7 +1131,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_segment_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "segment spike count:", neuron.size)
     filter_pop_spikes = [0 for i in range(len(filter_sizes))]
     # filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
@@ -1011,7 +1140,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 filter_pop_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "pop spike count:", neuron.size)
             # if filter_pop_spikes[filter_idx]:
             #     spike_times = spikes[0].magnitude
             #     for spike_time in spike_times:
@@ -1027,7 +1156,7 @@ if __name__ == '__main__':
             spikes = pop[0].segments[0].spiketrains
             for id2, neuron in enumerate(spikes):
                 object_spikes[filter_idx] += neuron.size
-                print pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size
+                print(pop[1], ":", idx, "-", id2, "proto-object spike count:", neuron.size)
                 split_data = pop[1].split('-')
                 spike_data = pop[0].segments[0].spiketrains
                 spikes = 0
@@ -1035,7 +1164,9 @@ if __name__ == '__main__':
                     spikes += neuron.size
                 if spikes:
                     spike_times = spike_data[0].magnitude
-                    x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+                    # x, y = convert_filter_xy_to_proto_centre(split_data, overlap)
+                    x = float(split_data[0])
+                    y = float(split_data[1])
                     for spike_time in spike_times:
                         coords_and_times.append([x, y, spike_time, filter_sizes[filter_idx]])
                         if '({}, {})'.format(x, y) in spike_count:
@@ -1044,15 +1175,15 @@ if __name__ == '__main__':
                             spike_count['({}, {})'.format(x, y)] = 1
         all_spike_count['{}'.format(filter_sizes[filter_idx])] = spike_count
     for filter_size in all_spike_count:
-        print "filter size:", filter_size
+        print("filter size:", filter_size)
         for location in all_spike_count[filter_size]:
-            print location, all_spike_count[filter_size][location]
+            print(location, all_spike_count[filter_size][location])
     np.save('all extracted proto spikes {}.npy'.format(label), coords_and_times)
-    print '\nup = 0, down = 1, left = 2, right = 3'
+    print('\nup = 0, down = 1, left = 2, right = 3')
     direction_key = {'0': [1, 2], '1': [1, 0], '2': [0, 1], '3': [2, 1]}
     move_spike_data = []
     for idx, neuron in enumerate(move_data.segments[0].spiketrains):
-        print 'direction: {} - spikes: {}'.format(idx, neuron.size)
+        print('direction: {} - spikes: {}'.format(idx, neuron.size))
         if neuron.size:
             spike_times = neuron.magnitude
             for spike_time in spike_times:
@@ -1064,17 +1195,17 @@ if __name__ == '__main__':
     spikes = boarder_data.segments[0].spiketrains
     for id2, neuron in enumerate(spikes):
         boarder_spikes += neuron.size
-        print id2, "boarder spike count:", neuron.size
-    print "total boarder spikes:", boarder_spikes
+        print(id2, "boarder spike count:", neuron.size)
+    print("total boarder spikes:", boarder_spikes)
     for idx, filter_size in enumerate(filter_sizes):
-        print "total spikes for {}:\n" \
+        print("total spikes for {}:\n" \
               "filter size: {}\n" \
               "segment: {}\n" \
               "filter: {}\n" \
               "objects: {}".format(label, filter_size,
                                    filter_segment_spikes[idx],
                                    filter_pop_spikes[idx],
-                                   object_spikes[idx])
+                                   object_spikes[idx]))
 
     filter_spikes_times = []
     for filter_idx, filter_populations_data in enumerate(all_filter_populations_data):
@@ -1093,7 +1224,7 @@ if __name__ == '__main__':
                     for spike_time in spike_times:
                         # idx = rotation, id2 = neuron id for that rotation
                         filter_spikes_times.append([pop[1], idx, id2, spike_time])
-                    print pop[1], ":", idx, "-", id2, "pop spike count:", spike_count
+                    # print(pop[1], ":", idx, "-", id2, "pop spike count:", spike_count)
             # if spike_count:
             #     print 'spikes were found'
             #     spike_times = spikes[0].magnitude
@@ -1104,16 +1235,16 @@ if __name__ == '__main__':
             #         # idx = rotation, id2 = neuron id for that rotation
             #         filter_spikes_times.append([pop[1], idx, id2, spike_time])
             if filter_spikes_times:
-                print 'last entry = ', filter_spikes_times[-1]
+                print('last entry = ', filter_spikes_times[-1])
     np.save('filter rotations spikes {}'.format(label), filter_spikes_times)
 
     if WTA:
         wta_spikes = wta_neuron.get_data()
-        print 'wta_spikes:', wta_spikes.segments[0].spiketrains[0].size
+        print('wta_spikes:', wta_spikes.segments[0].spiketrains[0].size)
 
     p.end()
 
-    print "done"
+    print("done")
 
 
 
