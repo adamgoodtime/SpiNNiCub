@@ -459,11 +459,12 @@ if __name__ == '__main__':
         # label = 'IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
         # label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [104, 73, 51]'
         # label = 'proto fs-4 ol-0.9 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
-        label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.03 icp-1.0 ps-0.75 in-all [30, 46, 70, 100]'
+        # label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.03 icp-1.0 ps-0.75 in-all [30, 46, 70, 100]'
+        label = 'g_subset strd fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.006 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
         print(label)
-        # filter_sizes = [104, 73, 51, 36]
-        filter_sizes = [30, 46, 70, 100]
-        create_video("run_data", label, 2, proto=True)
+        filter_sizes = [104, 73, 51, 36, 25]
+        # filter_sizes = [70, 55, 40]
+        create_video("run_data", label, 20, proto=True)
         # process_movement("run_data", label, 2)
     elif video_of == 'IROS':
         seperated_list = ['calib_circles',

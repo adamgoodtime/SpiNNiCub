@@ -154,17 +154,27 @@ def create_filter_boundaries(filter_width, filter_height, overlap=0.):
     if overlap_step:
         overlap = (filter_height - overlap_step) / filter_height
     list_of_corners = []
-    i = filter_width + peripheral_x
-    x = 0
-    while i <= x_res - peripheral_x:
-        j = filter_height + peripheral_y
-        y = 0
-        while j <= y_res - peripheral_y:
+    # i = filter_width + peripheral_x
+    # x = 0
+    j = filter_height + peripheral_y
+    y = 0
+    # while i <= x_res - peripheral_x:
+    while j <= y_res - peripheral_y:
+        # j = filter_height + peripheral_y
+        # y = 0
+        i = filter_width + peripheral_x
+        x = 0
+        # while j <= y_res - peripheral_y:
+        while i <= x_res - peripheral_x:
             list_of_corners.append([i, j, x, y])
-            j += filter_height - (overlap * filter_height)
-            y += 1
-        i += filter_width - (overlap * filter_width)
-        x += 1
+            # j += filter_height - (overlap * filter_height)
+            # y += 1
+            i += filter_width - (overlap * filter_width)
+            x += 1
+        # i += filter_width - (overlap * filter_width)
+        # x += 1
+        j += filter_height - (overlap * filter_height)
+        y += 1
     return list_of_corners, x, y
 
 # creates the connection list for connecting pixels to the periphery of the visual field, outside the fovea
@@ -474,6 +484,7 @@ def create_filter_centres(filter_size):
         y_offset = (-filter_size / 2.) + (offsets[rotation][1] * filter_size)
         for corner in corners:
             filter_centres[rotation].append([corner[0]+x_offset, corner[1]+y_offset])
+            # filter_centres[rotation].append([corner[1]+y_offset, corner[0]+x_offset])
 
     return filter_centres
 
@@ -769,7 +780,7 @@ if __name__ == '__main__':
     horizontal_split = 1
     veritcal_split = 1
 
-    kernel = False
+    kernel = True
 
     neuron_params = {
         # balance the refractory period/tau_mem so membrane has lost contribution before next spike
@@ -777,9 +788,9 @@ if __name__ == '__main__':
     ##############################
     # connection configurations: #
     ##############################
-    filter_sizes = [30, 46, 70]
-    # filter_sizes = [100, 70, 55, 40]
-    # filter_sizes = [104, 73, 51, 36, 25]  # pytorch
+    # filter_sizes = [30, 46, 70]
+    # filter_sizes = [70, 55, 40]
+    filter_sizes = [104, 73, 51, 36, 25]  # pytorch
     # filter_sizes = [104, 73, 51, 36]
     # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
     # filter_sizes = [46, 30]
@@ -787,13 +798,14 @@ if __name__ == '__main__':
     for filter_size in filter_sizes:
         list_of_filter_sizes.append([filter_size, filter_size])
     filter_split = 4
-    overlap = 0.6
+    original_overlap = 0.75
+    overlap = original_overlap
     overlap_step = 0
     base_weight = 5.
     boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.03
+    segment_percentage_fire_threshold = 0.02
     filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.03
+    inhib_percentage_fire_threshold = 0.01
     inhib_connect_prob = 1.
     proto_scale = 0.75
     inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -802,13 +814,13 @@ if __name__ == '__main__':
     from_wta = 10.
     self_excite = 0.
 
-    simulate = 'proto'
+    simulate = 'g_subset'
     data_list_index = 12
     fake_full_ATIS = False  # functions have had this forced, be careful
     # simulate = None
     if overlap_step:
         overlap = overlap_step
-    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+    label = "{} strd fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
                                                                                        boarder_percentage_fire_threshold,
                                                                                        segment_percentage_fire_threshold,
@@ -816,6 +828,7 @@ if __name__ == '__main__':
                                                                                        inhib_percentage_fire_threshold,
                                                                                        inhib_connect_prob, proto_scale,
                                                                                        inhib)
+    overlap = original_overlap
     if WTA:
         label += ' to-{} from-{}'.format(to_wta, from_wta)
     if self_excite:
@@ -850,6 +863,8 @@ if __name__ == '__main__':
                 all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
             elif simulate == 'subset':
                 all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
+            elif simulate == 'g_subset':
+                all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
             elif simulate == 'proto':
                 all_directories = gather_all_ATIS_log('ATIS/(no)proto_object')
             elif simulate == 'no_proto':
@@ -949,7 +964,11 @@ if __name__ == '__main__':
                     shape_kernel = np.asarray([filter[0], filter[1]*2])
                 else:
                     shape_kernel = np.asarray(filter)
-                pre_sample_steps = shape_kernel * (1. - overlap)
+                if overlap_step:
+                    new_overlap = (filter[0] - overlap_step) / filter[0]
+                else:
+                    new_overlap = original_overlap
+                pre_sample_steps = shape_kernel * (1. - new_overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 print("shape_pre", shape_pre)
                 print("shape_post", shape_post)
@@ -991,7 +1010,11 @@ if __name__ == '__main__':
                     shape_kernel = np.asarray([filter[0], filter[1]*2])
                 else:
                     shape_kernel = np.asarray(filter)
-                pre_sample_steps = shape_kernel * (1. - overlap)
+                if overlap_step:
+                    new_overlap = (filter[0] - overlap_step) / filter[0]
+                else:
+                    new_overlap = original_overlap
+                pre_sample_steps = shape_kernel * (1. - new_overlap)
                 start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
                 weight_kernel = np.asarray(inhibitory_matrix) / (inhib_count * inhib_percentage_fire_threshold)
                 weight_kernel = weight_kernel.transpose()
