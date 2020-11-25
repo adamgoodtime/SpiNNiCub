@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import os
 import shutil
 from os.path import join, getsize
+import sys
 # import yarp
 import warnings
 import spynnaker8 as p
@@ -468,7 +469,7 @@ def create_filter_centres(filter_size):
     6 = 0, -0.5
     7 = -0.35, -0.35
     '''
-    base_offset = 0.3
+    base_offset = 0.5
     offsets = [[-base_offset, 0],
                [-base_offset/np.sqrt(2), base_offset/np.sqrt(2)],
                [0, base_offset],
@@ -631,7 +632,7 @@ def combine_parsed_ATIS(event_list, fake_full_ATIS=False):
                     max_time = new_time
         time_offset = max_time
     print('maximum time after combining was', np.ceil(max_time))
-    return events
+    return events, max_time
 
 def gather_all_ATIS_log(top_directory):
     all_directories = []
@@ -753,74 +754,76 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
 x_res = 304
 y_res = 240
 
-simulate = 'real'
+seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
+                  'ATIS/IROS_from Giulia/no_obj',  # 1
+                  'ATIS/IROS_from Giulia/obj',  # 2
+                  'ATIS/IROS_from Giulia/019',  # 3
+                  'ATIS/IROS_from Giulia/029',  # 4
+                  'ATIS/IROS_from Giulia/085',  # 5
+                  'ATIS/IROS_from Giulia/157',  # 6
+                  'ATIS/IROS_from Giulia/multi_objects_saccade1',  # 7
+                  'ATIS/IROS_from Giulia/object_clutter',  # 8
+                  'ATIS/IROS_from Giulia/object_clutter2',  # 9
+                  'ATIS/IROS_from Giulia/objects_approaching',  # 10
+                  'ATIS/IROS_from Giulia/objects_approaching_no_saccade',  # 11
+                  'ATIS/IROS_from Giulia/paddle_moving_clutter'  # 12
+                  ]
+fovea_x = 300
+fovea_y = 236
+# min for 1 board
+# fovea_x = 170
+# fovea_y = 135
+peripheral_x = (x_res - fovea_x) / 2
+peripheral_y = (y_res - fovea_y) / 2
+horizontal_split = 1
+veritcal_split = 1
 
-if __name__ == '__main__':
-    seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
-                      'ATIS/IROS_from Giulia/no_obj',  # 1
-                      'ATIS/IROS_from Giulia/obj',  # 2
-                      'ATIS/IROS_from Giulia/019',  # 3
-                      'ATIS/IROS_from Giulia/029',  # 4
-                      'ATIS/IROS_from Giulia/085',  # 5
-                      'ATIS/IROS_from Giulia/157',  # 6
-                      'ATIS/IROS_from Giulia/multi_objects_saccade1',  # 7
-                      'ATIS/IROS_from Giulia/object_clutter',  # 8
-                      'ATIS/IROS_from Giulia/object_clutter2',  # 9
-                      'ATIS/IROS_from Giulia/objects_approaching',  # 10
-                      'ATIS/IROS_from Giulia/objects_approaching_no_saccade',  # 11
-                      'ATIS/IROS_from Giulia/paddle_moving_clutter'  # 12
-                      ]
-    fovea_x = 300
-    fovea_y = 236
-    # min for 1 board
-    # fovea_x = 170
-    # fovea_y = 135
-    peripheral_x = (x_res - fovea_x) / 2
-    peripheral_y = (y_res - fovea_y) / 2
-    horizontal_split = 1
-    veritcal_split = 1
+kernel = True
 
-    kernel = True
+neuron_params = {
+    # balance the refractory period/tau_mem so membrane has lost contribution before next spike
+}
+##############################
+# connection configurations: #
+##############################
+# filter_sizes = [30, 46, 70]
+# filter_sizes = [70, 55, 40]
+filter_sizes = [104, 73, 51, 36, 25]  # pytorch
+# filter_sizes = [104, 73, 51, 36]
+# filter_sizes = [100, 70, 50, 30]
+# filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
+# filter_sizes = [46, 30]
+list_of_filter_sizes = []
+for filter_size in filter_sizes:
+    list_of_filter_sizes.append([filter_size, filter_size])
+filter_split = 4
+original_overlap = 0.6
+overlap = original_overlap
+overlap_step = 0
+base_weight = 5.
+boarder_percentage_fire_threshold = 0.2
+segment_percentage_fire_threshold = 0.02
+filter_percentage_fire_threshold = 0.8
+inhib_percentage_fire_threshold = 0.05
+inhib_connect_prob = 1.
+proto_scale = 0.75
+inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+WTA = False
+to_wta = 10.
+from_wta = 10.
+self_excite = 0.
 
-    neuron_params = {
-        # balance the refractory period/tau_mem so membrane has lost contribution before next spike
-    }
-    ##############################
-    # connection configurations: #
-    ##############################
-    # filter_sizes = [30, 46, 70]
-    # filter_sizes = [70, 55, 40]
-    filter_sizes = [104, 73, 51, 36, 25]  # pytorch
-    # filter_sizes = [104, 73, 51, 36]
-    # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
-    # filter_sizes = [46, 30]
-    list_of_filter_sizes = []
-    for filter_size in filter_sizes:
-        list_of_filter_sizes.append([filter_size, filter_size])
-    filter_split = 4
-    original_overlap = 0.75
-    overlap = original_overlap
-    overlap_step = 0
-    base_weight = 5.
-    boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.02
-    filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.01
-    inhib_connect_prob = 1.
-    proto_scale = 0.75
-    inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
-    WTA = False
-    to_wta = 10.
-    from_wta = 10.
-    self_excite = 0.
+simulate = 'g_subset'
+record_spikes = True
+data_list_index = 0
+fake_full_ATIS = False  # functions have had this forced, be careful
+# simulate = None
+if overlap_step:
+    overlap = overlap_step
 
-    simulate = 'g_subset'
-    data_list_index = 12
-    fake_full_ATIS = False  # functions have had this forced, be careful
-    # simulate = None
-    if overlap_step:
-        overlap = overlap_step
-    label = "{} strd fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+def iCub_main():
+    global overlap
+    label = "{} noVM fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
                                                                                        boarder_percentage_fire_threshold,
                                                                                        segment_percentage_fire_threshold,
@@ -844,7 +847,7 @@ if __name__ == '__main__':
             directions = ['LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB', 'LR', 'RL', 'BT', 'TB']
             events = generate_fake_stimuli(directions, 'square')
         elif simulate == 'basic':
-            events = parse_ATIS('ATIS/data_surprise', 'decoded_events.txt')
+            events = parse_ATIS('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/data_surprise', 'decoded_events.txt')
         elif simulate == 'circle':
             directions = ['up', 'down', 'left', 'right', 'up', 'down', 'left', 'right', 'up', 'down', 'left', 'right']
             events = generate_fake_stimuli(directions, 'circle')
@@ -856,23 +859,27 @@ if __name__ == '__main__':
                 print(contrast, ':')
                 for location in locations:
                     print("\t", location)
-                    combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
-            events = combine_parsed_ATIS(combined_events)
+                    combined_events.append(parse_ATIS('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
+            events, runtime = combine_parsed_ATIS(combined_events)
         else:
             if simulate == 'all_ATIS':
-                all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
+                all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_attention')
             elif simulate == 'subset':
-                all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
+                all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_subset')
             elif simulate == 'g_subset':
-                all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
+                all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_from Giulia')
             elif simulate == 'proto':
-                all_directories = gather_all_ATIS_log('ATIS/(no)proto_object')
+                all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/(no)proto_object')
             elif simulate == 'no_proto':
-                all_directories = gather_all_ATIS_log('ATIS/(no)proto_object/no_obj')
+                all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/(no)proto_object/no_obj')
             elif simulate == 'IROS':
-                # all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
+                # all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_from Giulia')
                 all_directories = gather_all_ATIS_log(seperated_list[data_list_index])
                 label = seperated_list[data_list_index][22:] + ' ' + label
+            elif simulate == 'bitfield':
+                all_directories = ["data/"]
+                print("Not ready yet")
+                Exception
             else:
                 print("incorrect stimulus setting")
                 Exception
@@ -880,13 +887,8 @@ if __name__ == '__main__':
             for directory in all_directories:
                 print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
                 combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
-            events = combine_parsed_ATIS(combined_events)
+            events, runtime = combine_parsed_ATIS(combined_events)
         print("Events created")
-        runtime = 0
-        for neuron_id in range(len(events)):
-            for time in events[neuron_id]:
-                if time > runtime:
-                    runtime = time
         runtime = int(np.ceil(runtime)) + 1000
         print("running for", runtime, "ms")
         if runtime < 2000:
@@ -908,7 +910,7 @@ if __name__ == '__main__':
                                                     plot=False)
     boarder_population = p.Population(4+(veritcal_split*2)+(horizontal_split*2), p.IF_curr_exp(*neuron_params),
                                       label="boarder populations")
-    if simulate:
+    if simulate and record_spikes:
         boarder_population.record('spikes')
     connect_vis_pop(vis_pop, boarder_population, boarder_connections)
     # p.Projection(vis_pop, boarder_population, p.FromListConnector(boarder_connections))
@@ -1028,7 +1030,7 @@ if __name__ == '__main__':
                 weight = (base_weight/filter_split) / filter_percentage_fire_threshold
                 for split in range(filter_split):
                     p.Projection(filter_segments[-1][split], filter_populations[-1], p.OneToOneConnector(), p.StaticSynapse(weight=weight, delay=1))
-            if simulate:
+            if simulate and record_spikes:
                 filter_populations[-1].record('spikes')
                 for split in range(filter_split):
                     filter_segments[-1][split].record('spikes')
@@ -1069,7 +1071,7 @@ if __name__ == '__main__':
 
     if WTA:
         wta_neuron = p.Population(1, p.IF_curr_exp(*neuron_params), label='WTA')
-        if simulate:
+        if simulate and record_spikes:
             wta_neuron.record('spikes')
 
     for idx, proto_object_pop in enumerate(all_proto_object_pops):
@@ -1078,7 +1080,7 @@ if __name__ == '__main__':
         print('to wta weight:', base_weight * (to_wta / to_wta_scale), '- from wta weight:', base_weight * (from_wta / to_wta_scale))
         print("number of neurons and synapses in filter", filter_sizes[idx], "proto-objects = ", len(proto_object_pop))
         for object in proto_object_pop:
-            if simulate:
+            if simulate and record_spikes:
                 object.record('spikes')
             if WTA:
                 p.Projection(object, wta_neuron, p.FromListConnector([[0, 0, base_weight * (to_wta / to_wta_scale), 1]]), receptor_type='excitatory')
@@ -1089,7 +1091,7 @@ if __name__ == '__main__':
     move_pop = create_movement(all_proto_object_pops, boarder_population, 0.1, 0.1, base_weight)
 
     print("running")
-    if simulate:
+    if simulate and record_spikes:
         move_pop.record('spikes')
 
     # p.run(runtime)
@@ -1114,6 +1116,11 @@ if __name__ == '__main__':
         p.external_devices.run_forever()
         # stop recording
         input('Press enter to stop')
+
+    if not record_spikes:
+        p.end()
+        sys.exit()
+
     print(label)
     print("saving")
     boarder_data = boarder_population.get_data()
@@ -1269,7 +1276,8 @@ if __name__ == '__main__':
 
     print("done")
 
-
+if __name__ == '__main__':
+    iCub_main()
 
 
 

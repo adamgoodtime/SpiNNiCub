@@ -115,7 +115,7 @@ def parse_filter_data(file_location, file_name, filter_sizes):
         video_dict['f{}-r{}'.format(spike_filter_size, rotation)].append([x, y, spike_time, spike_filter_size])
     return video_dict
 
-def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, rotate=False):
+def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, rotate=True):
     if spikes:
         spike_data = spikes
         if spike_data == []:
@@ -389,7 +389,7 @@ if __name__ == '__main__':
 
     video_of = 'solo'
     if video_of == 'raw':
-        all_directories = gather_all_ATIS_log('ATIS/IROS_subset')
+        all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
         combined_events = []
         for directory in all_directories:
             print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
@@ -397,7 +397,7 @@ if __name__ == '__main__':
         events = combine_parsed_ATIS(combined_events)
         spikes = parse_events_to_spike_times(events)
         filter_sizes = [1]
-        create_video('ATIS/IROS_subset', 'All ATIS input spikes', 20, spikes=spikes)
+        create_video('ATIS/IROS_from Giulia', 'All rotated ATIS input spikes', 2, spikes=spikes)
     elif video_of == 'solo_raw':
         all_directories = []
         for root, dirs, files in os.walk('ATIS'):
@@ -460,35 +460,37 @@ if __name__ == '__main__':
         # label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [104, 73, 51]'
         # label = 'proto fs-4 ol-0.9 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
         # label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.03 icp-1.0 ps-0.75 in-all [30, 46, 70, 100]'
-        label = 'g_subset strd fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.006 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        label = 'g_subset bos0.5 fs-4 ol-0.7 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        # label = 'g_subset bos0.5 fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [100, 70, 50, 30]'
         print(label)
         filter_sizes = [104, 73, 51, 36, 25]
-        # filter_sizes = [70, 55, 40]
-        create_video("run_data", label, 20, proto=True)
+        # filter_sizes = [100, 70, 50, 30]
+        # filter_sizes = [1]
+        create_video("run_data", label, 2, proto=True, rotate=True)
         # process_movement("run_data", label, 2)
     elif video_of == 'IROS':
         seperated_list = ['calib_circles',
-                          # 'no_obj',
+                          'no_obj',
                           'obj',
                           '019',
-                          # '029',
-                          # '085',
-                          # '157',
-                          # 'multi_objects_saccade1',
-                          # 'object_clutter',
+                          '029',
+                          '085',
+                          '157',
+                          'multi_objects_saccade1',
+                          'object_clutter',
                           'object_clutter2',
-                          # 'objects_approaching',
+                          'objects_approaching',
                           'objects_approaching_no_saccade',
-                          # 'paddle_moving_clutter'
+                          'paddle_moving_clutter'
                           ]
-        filter_sizes = [104, 73, 51, 36]
+        filter_sizes = [104, 73, 51, 36, 25]
         # label = ' IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
-        # label = ' pytorch IROS fs-4 ol-4 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
-        label = ' pytorch IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
+        label = ' IROS strd fs-4 ol-0.8 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        # label = ' pytorch IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
         count = 1
         for test in seperated_list:
             print("starting: " + test + " - {}/{}".format(count, len(seperated_list)))
-            create_video("IROS_data", test+label, 20, proto=True, rotate=True)
+            create_video("data_for_processing", test+label, 20, proto=True, rotate=True)
             count += 1
     else:
         sfts = [0.04, 0.02]
