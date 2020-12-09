@@ -29,6 +29,7 @@ def set_config_file(two, twone, three, four, five, time_scale_factor=1):
         Exception
 
     output.write(BASIC_DATA + "{}\n\n".format(time_scale_factor))
+    output.write("[Mapping] \n\n")
     if two:
         output.write("loading_algorithms = MundyOnChipRouterCompression\n")
     if twone:
@@ -42,15 +43,43 @@ def set_config_file(two, twone, three, four, five, time_scale_factor=1):
     output.flush()
     output.close()
 
-
+def set_config(config, timescale):
+    if config == 1:
+        config = [1, 0, 0, 0, 0, timescale]
+    elif config == 2:
+        config = [1, 1, 0, 0, 0, timescale]
+    elif config == 3:
+        config = [0, 1, 1, 0, 0, timescale]
+    elif config == 4:
+        config = [0, 1, 0, 1, 0, timescale]
+    elif config == 5:
+        config = [0, 0, 1, 0, 1, timescale]
+    elif config == 6:
+        config = [0, 0, 0, 1, 1, timescale]
+    set_config_file(*config)
 
 
 if __name__ == '__main__':
     timescale = 1
-    set_config_file(two=True,
-                    twone=True,
-                    three=False,
-                    four=False,
-                    five=False,
-                    time_scale_factor=timescale)
-    iCub_main()
+    simulate = 'average'
+    noise_level = 0.4
+    npc = 64
+    # average_rate = 220
+    # average_rate = 210
+    # average_rate = 200
+    # average_rate = 190
+    # average_rate = 180
+    average_rate = 170
+    config = 5
+    set_config(config, timescale)
+    # set_config_file(two=False,
+    #                 twone=False,
+    #                 three=False,
+    #                 four=True,
+    #                 five=True,
+    #                 time_scale_factor=timescale)
+    print(timescale, simulate, noise_level, config, average_rate, npc)
+    iCub_main(simulate, noise_level, False, average_rate=average_rate, npc=npc)
+    print("done", timescale, simulate, noise_level, config, average_rate, npc)
+    print(timescale, simulate, noise_level, config, average_rate, npc)
+    print("done", timescale, simulate, noise_level, config, npc)

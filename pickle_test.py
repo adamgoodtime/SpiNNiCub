@@ -39,14 +39,24 @@ def moving_average(a, n=3):
 #
 # plt.show()
 
-directory = '/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/pickle_data/'
-file_name = 'color1.pickle'
+# directory = '/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/pickle_data/'
+# file_name = 'color1.pickle'
+noise_level = 0.1
+directory = '/data/mbaxrap7/white_noise/noise/{}/{}_304x240thr_noise.pickle'.format(noise_level, noise_level)
+file_name = ''
 infile = open(directory+file_name, 'rb')
 new_dict = pickle.load(infile)
 infile.close()
 
-x = new_dict['data']['/cam0/events']['dvs']['x']
-y = new_dict['data']['/cam0/events']['dvs']['y']
-t = new_dict['data']['/cam0/events']['dvs']['ts']
+# x = new_dict['data']['/cam0/events']['dvs']['x']
+# y = new_dict['data']['/cam0/events']['dvs']['y']
+# t = new_dict['data']['/cam0/events']['dvs']['ts']
+
+x = new_dict['x']
+y = new_dict['y']
+t = new_dict['ts']
 
 print("done")
+
+
+# calib_circles no_obj obj 019 029 085 157 multi_objects_saccade1 object_clutter object_clutter2 objects_approaching objects_approaching_no_saccade paddle_moving_clutter

@@ -8,6 +8,7 @@ import os
 import shutil
 from os.path import join, getsize
 import sys
+import pickle
 # import yarp
 import warnings
 import spynnaker8 as p
@@ -353,7 +354,7 @@ def visual_field_with_kernal(filter_width, filter_height, filter_split=4, rotati
     if plot:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_split_matrix))
+        ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_split_matrix))
         ax.plot_wireframe(np.array(xs), np.array(ys), np.array(filter_matrix))
         # ax.plot_wireframe(np.array(xs2), np.array(ys2), np.array(filter_matrix2))
         ax.set_xlim([0, 250])
@@ -699,6 +700,39 @@ def parse_event_class(eventsON, eventsOFF):
             events[convert_pixel_to_id(x, y)].append(timestamp)
     return events
 
+def gather_pickled_noise(input_type):
+    if input_type == 'noise':
+        file_name = '/data/mbaxrap7/white_noise/noise/{}/{}_304x240thr_noise.pickle'.format(noise_level, noise_level)
+    else:
+        file_name = '/data/mbaxrap7/white_noise/events_noise/iCubdataset/{}/{}perc_events_noise.pickle'.format(noise_level, noise_level)
+    infile = open(file_name, 'rb')
+    new_dict = pickle.load(infile)
+    infile.close()
+    spike_count = {}
+
+    xs = new_dict['x']
+    ys = new_dict['y']
+    ts = new_dict['ts']
+
+    events = [[] for i in range(x_res*y_res)]
+    for x, y, t in zip(xs, ys, ts):
+        # if '{}'.format(int(t)) in spike_count:
+        #     spike_count['{}'.format(int(t))] += 1
+        # else:
+        #     spike_count['{}'.format(int(t))] = 1
+        events[convert_pixel_to_id(x, y)].append(t)
+    # max_throughput = max([(value, key) for key, value in spike_count.items()])
+    # total_spikes = sum([value for key, value in spike_count.items()])
+    return events
+
+def create_average_spike_rates(rate, duration=2000):
+    events = [[] for i in range(x_res*y_res)]
+    for i in range(duration):
+        for j in range(rate):
+            pix = np.random.randint(x_res*y_res)
+            events[pix].append(i)
+    return events
+
 # connect from vis pop in the necessary way depending on the type of run
 def connect_vis_pop(vis, post, connections, receptor_type='excitatory'):
     if isinstance(simulate, str):
@@ -770,9 +804,9 @@ seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
                   ]
 fovea_x = 300
 fovea_y = 236
-# min for 1 board
+# min for 1 board with [100, 70, 50, 30] 0.6ol
 # fovea_x = 170
-# fovea_y = 135
+# fovea_y = 140
 peripheral_x = (x_res - fovea_x) / 2
 peripheral_y = (y_res - fovea_y) / 2
 horizontal_split = 1
@@ -804,7 +838,7 @@ base_weight = 5.
 boarder_percentage_fire_threshold = 0.2
 segment_percentage_fire_threshold = 0.02
 filter_percentage_fire_threshold = 0.8
-inhib_percentage_fire_threshold = 0.05
+inhib_percentage_fire_threshold = 0.005
 inhib_connect_prob = 1.
 proto_scale = 0.75
 inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
@@ -812,8 +846,9 @@ WTA = False
 to_wta = 10.
 from_wta = 10.
 self_excite = 0.
+noise_level = 0.1
 
-simulate = 'g_subset'
+simulate = 'IROS'
 record_spikes = True
 data_list_index = 0
 fake_full_ATIS = False  # functions have had this forced, be careful
@@ -821,9 +856,12 @@ fake_full_ATIS = False  # functions have had this forced, be careful
 if overlap_step:
     overlap = overlap_step
 
-def iCub_main():
-    global overlap
-    label = "{} noVM fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+def iCub_main(setup, noise, recording, average_rate=0, npc=64):
+    global simulate, overlap, noise_level, record_spikes
+    simulate = setup
+    noise_level = noise
+    record_spikes = recording
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
                                                                                        base_weight,
                                                                                        boarder_percentage_fire_threshold,
                                                                                        segment_percentage_fire_threshold,
@@ -861,6 +899,13 @@ def iCub_main():
                     print("\t", location)
                     combined_events.append(parse_ATIS('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
             events, runtime = combine_parsed_ATIS(combined_events)
+        elif simulate == 'noise' or simulate == 'events':
+            events = gather_pickled_noise(simulate)
+            runtime = max(max(events))
+        elif simulate == 'average':
+            duration = 120000
+            events = create_average_spike_rates(average_rate, duration=duration)
+            runtime = duration
         else:
             if simulate == 'all_ATIS':
                 all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_attention')
@@ -876,10 +921,6 @@ def iCub_main():
                 # all_directories = gather_all_ATIS_log('/localhome/mbaxrap7/spinnicub_python3/SpiNNiCub/ATIS/IROS_from Giulia')
                 all_directories = gather_all_ATIS_log(seperated_list[data_list_index])
                 label = seperated_list[data_list_index][22:] + ' ' + label
-            elif simulate == 'bitfield':
-                all_directories = ["data/"]
-                print("Not ready yet")
-                Exception
             else:
                 print("incorrect stimulus setting")
                 Exception
@@ -902,7 +943,7 @@ def iCub_main():
         print("running until enter is pressed")
         p.setup(timestep=1.0)
         vis_pop = p.Population(None, ICUBInputVertex(spinnaker_link_id=0), label='pop_in')
-    p.set_number_of_neurons_per_core(p.IF_curr_exp(), 64)
+    p.set_number_of_neurons_per_core(p.IF_curr_exp(), npc)
     print(label)
     # create boarder connections and populations
     boarder_connections = create_peripheral_mapping(base_weight=base_weight,
@@ -1034,6 +1075,10 @@ def iCub_main():
                 filter_populations[-1].record('spikes')
                 for split in range(filter_split):
                     filter_segments[-1][split].record('spikes')
+            else:
+                filter_populations[-1].record('packets-per-timestep')
+                for split in range(filter_split):
+                    filter_segments[-1][split].record('packets-per-timestep')
             print("number of neurons in segments = ", no_neurons*filter_split)
             print("number of neurons in filters = ", no_neurons)
             # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
@@ -1118,8 +1163,13 @@ def iCub_main():
         input('Press enter to stop')
 
     if not record_spikes:
+        spikes_per_timestep = []
+        for filter_size, filter_data in enumerate(all_filter_segments):
+            for data in filter_data:
+                for split_data in data:
+                    spikes_per_timestep.append([split_data.get_data('packets-per-timestep'), split_data.label])
         p.end()
-        sys.exit()
+        return
 
     print(label)
     print("saving")
@@ -1274,10 +1324,12 @@ def iCub_main():
 
     p.end()
 
-    print("done")
+    print("SpiNNdone")
+    return
 
 if __name__ == '__main__':
-    iCub_main()
+    iCub_main(simulate, noise_level, record_spikes)
+    print("done")
 
 
 

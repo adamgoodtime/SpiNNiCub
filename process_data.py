@@ -115,7 +115,7 @@ def parse_filter_data(file_location, file_name, filter_sizes):
         video_dict['f{}-r{}'.format(spike_filter_size, rotation)].append([x, y, spike_time, spike_filter_size])
     return video_dict
 
-def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, rotate=True):
+def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, rotate=True, load_location=''):
     if spikes:
         spike_data = spikes
         if spike_data == []:
@@ -123,7 +123,10 @@ def create_video(file_location, file_name, frame_rate, spikes=[], proto=True, ro
             return None
     else:
         if proto:
-            spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
+            if load_location:
+                spike_data = np.load("{}/all extracted proto spikes {}.npy".format(load_location, file_name))
+            else:
+                spike_data = np.load("{}/all extracted proto spikes {}.npy".format(file_location, file_name))
         else:
             spike_data = np.load("{}/filter rotations spikes {}.npy".format(file_location, file_name))
     frame_duration = 1000. / frame_rate
@@ -387,7 +390,7 @@ if __name__ == '__main__':
    #  spikes = parse_events_to_spike_times(events)
    #  create_video('run_data', 'input spikes', 2, spikes=spikes)
 
-    video_of = 'solo'
+    video_of = 'IROS'
     if video_of == 'raw':
         all_directories = gather_all_ATIS_log('ATIS/IROS_from Giulia')
         combined_events = []
@@ -460,11 +463,13 @@ if __name__ == '__main__':
         # label = 'subset fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [104, 73, 51]'
         # label = 'proto fs-4 ol-0.9 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
         # label = 'proto fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.03 fft-0.8 ift-0.03 icp-1.0 ps-0.75 in-all [30, 46, 70, 100]'
-        label = 'g_subset bos0.5 fs-4 ol-0.7 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        # label = 'g_subset bos0.5 fs-4 ol-0.7 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        # label = 'g_subset noVM fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.002 fft-0.8 ift-0.05 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        label = 'g_subset noVM fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.04 icp-1.0 ps-0.75 in-all [100, 70, 50, 30]'
         # label = 'g_subset bos0.5 fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [100, 70, 50, 30]'
         print(label)
-        filter_sizes = [104, 73, 51, 36, 25]
-        # filter_sizes = [100, 70, 50, 30]
+        # filter_sizes = [104, 73, 51, 36, 25]
+        filter_sizes = [100, 70, 50, 30]
         # filter_sizes = [1]
         create_video("run_data", label, 2, proto=True, rotate=True)
         # process_movement("run_data", label, 2)
@@ -485,12 +490,13 @@ if __name__ == '__main__':
                           ]
         filter_sizes = [104, 73, 51, 36, 25]
         # label = ' IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [100, 70, 55, 40]'
-        label = ' IROS strd fs-4 ol-0.8 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
+        label = ' IROS fs-4 ol-0.7 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.005 icp-1.0 ps-0.75 in-all [104, 73, 51, 36, 25]'
         # label = ' pytorch IROS fs-4 ol-0.6 w-5.0 bft-0.2 sft-0.02 fft-0.8 ift-0.02 icp-1.0 ps-0.75 in-all [104, 73, 51, 36]'
         count = 1
         for test in seperated_list:
             print("starting: " + test + " - {}/{}".format(count, len(seperated_list)))
-            create_video("data_for_processing", test+label, 20, proto=True, rotate=True)
+            create_video("for_analysis/overlap_0.7/{}".format(test), test+label, 20, proto=True, rotate=True,
+                         load_location='for_analysis')
             count += 1
     else:
         sfts = [0.04, 0.02]
