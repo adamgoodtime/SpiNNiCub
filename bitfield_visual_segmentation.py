@@ -596,6 +596,86 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
 
     return x, y
 
+def kernel_dict_to_populations(kernel, vis_pop):
+    # kernel_params["inhib f{} - r{}".format(filter[0], rotation)] = {
+    #     "no_neurons": no_neurons,
+    #     "shape_pre": shape_pre,
+    #     "shape_post": shape_post,
+    #     "shape_kernel": shape_kernel,
+    #     "weight_kernel": weight_kernel,
+    #     "post_sample_steps_in_pre": pre_sample_steps,
+    #     "post_start_coords_in_pre": start_location
+
+    #     "pre_start_coords_in_post": [0,0]
+    # shape_pre, shape_post, shape_kernel, weight_kernel = None,
+    # delay_kernel = None, shape_common = None,
+    # pre_sample_steps_in_post = None, pre_start_coords_in_post = None,
+    # post_sample_steps_in_pre = None, post_start_coords_in_pre = None,
+    kernel_distance_x = fovea_x / visual_field_split_x
+    kernel_distance_y = fovea_y / visual_field_split_y
+    in2seg_connections = {}
+    inhib_connections = {}
+    for i in range(visual_field_split_x):
+        for j in range(visual_field_split_y):
+            in2seg_connections["{} {}".format(i, j)] = []
+            inhib_connections["{} {}".format(i, j)] = []
+    for key in kernel:
+        start_location = kernel[key]["post_start_coords_in_pre"]
+        new_start_x = int(start_location[0] / visual_field_split_x)
+        new_start_y = int(start_location[1] / visual_field_split_y)
+        starts_x = []
+        starts_y = []
+        pre_sample_steps = kernel[key]["post_sample_steps_in_pre"]
+        new_step_x = int(pre_sample_steps[0] / visual_field_split_x)
+        new_step_y = int(pre_sample_steps[1] / visual_field_split_y)
+        steps_x = []
+        steps_y = []
+        shape_post = kernel[key]["shape_post"]
+        new_shape_x = int(shape_post[0] / visual_field_split_x)
+        new_shape_y = int(shape_post[1] / visual_field_split_y)
+        shapes_x = []
+        shapes_y = []
+        for i in range(visual_field_split_x):
+            steps_x.append(new_step_x)
+            starts_x.append(i*new_start_x)
+            shapes_x.append(new_shape_x)
+        for i in range(visual_field_split_y):
+            steps_y.append(new_step_y)
+            starts_y.append(i*new_start_y)
+            shapes_y.append(new_shape_y)
+        steps_x[-1] += pre_sample_steps[0] - sum(steps_x)
+        steps_y[-1] += pre_sample_steps[1] - sum(steps_y)
+        shapes_x[-1] += shape_post[0] - sum(shapes_x)
+        shapes_y[-1] += shape_post[1] - sum(shapes_y)
+        if "in2seg" in key:
+            for i in range(visual_field_split_x):
+                for j in range(visual_field_split_y):
+                    in2seg_connections["{} {}".format(i, j)].append(kernel[key])
+                    in2seg_connections["{} {}".format(i, j)][-1]["post_sample_steps_in_pre"][0] = steps_x[i]
+                    in2seg_connections["{} {}".format(i, j)][-1]["post_sample_steps_in_pre"][1] = steps_y[j]
+                    in2seg_connections["{} {}".format(i, j)][-1]["post_start_coords_in_pre"][0] = starts_x[i]
+                    in2seg_connections["{} {}".format(i, j)][-1]["post_start_coords_in_pre"][1] = starts_y[j]
+                    in2seg_connections["{} {}".format(i, j)][-1]["shape_post"][0] = shapes_x[i]
+                    in2seg_connections["{} {}".format(i, j)][-1]["shape_post"][1] = shapes_y[j]
+                    in2seg_connections["{} {}".format(i, j)][-1]["no_neurons"] = shapes_x[i] * shapes_y[j]
+        else:
+            for i in range(visual_field_split_x):
+                for j in range(visual_field_split_y):
+                    inhib_connections["{} {}".format(i, j)].append(kernel[key])
+                    inhib_connections["{} {}".format(i, j)][-1]["post_sample_steps_in_pre"][0] = steps_x[i]
+                    inhib_connections["{} {}".format(i, j)][-1]["post_sample_steps_in_pre"][1] = steps_y[j]
+                    inhib_connections["{} {}".format(i, j)][-1]["post_start_coords_in_pre"][0] = starts_x[i]
+                    inhib_connections["{} {}".format(i, j)][-1]["post_start_coords_in_pre"][1] = starts_y[j]
+                    inhib_connections["{} {}".format(i, j)][-1]["shape_post"][0] = shapes_x[i]
+                    inhib_connections["{} {}".format(i, j)][-1]["shape_post"][1] = shapes_y[j]
+                    inhib_connections["{} {}".format(i, j)][-1]["no_neurons"] = shapes_x[i] * shapes_y[j]
+
+    print("connect vis pop")
+    for key in in2seg_connections:
+        for connection in in2seg_connections[key]:
+            print("wtf do I do now?")
+    return
+
 def parse_ATIS(file_location, file_name, fake_full_ATIS=False):
     f = open("{}/{}".format(file_location, file_name), "r")
     if fake_full_ATIS:
@@ -812,7 +892,8 @@ peripheral_y = (y_res - fovea_y) / 2
 horizontal_split = 1
 veritcal_split = 1
 
-kernel = True
+visual_field_split_x = 4
+visual_field_split_y = 4
 
 neuron_params = {
     # balance the refractory period/tau_mem so membrane has lost contribution before next spike
@@ -957,27 +1038,24 @@ def iCub_main(setup, noise, recording, average_rate=0, npc=64):
     # p.Projection(vis_pop, boarder_population, p.FromListConnector(boarder_connections))
 
     # create filters and connections from input video stream
-    all_filter_segments = []
-    all_filter_populations = []
-    all_proto_object_pops = []
+    # all_filter_segments = []
+    # all_filter_populations = []
+    # all_proto_object_pops = []
+    kernel_params = {}
     projection_list = []
     for filter in list_of_filter_sizes:
         print("SpiNN setup for filter", filter)
         # for each rotation, 0 -> 7pi/4
-        filter_segments = []
-        filter_populations = []
+        # filter_segments = []
+        # filter_populations = []
         for rotation in range(8):
             print("Rotation", rotation+1, "/ 8")
-            kernel_matrices, no_neurons, post_shape, kernel_count, inhibitory_matrix, inhib_count = visual_field_with_kernal(filter[0], filter[1],
-                                                                                           filter_split=filter_split,
-                                                                                           rotation=rotation,
-                                                                                           overlap=overlap,
-                                                                                           plot=False)
-            filter_segment_splits = []
-            for split in range(filter_split):
-                filter_segment_splits.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                                    label='segments {} - {} - {}'.format(filter, rotation, split)))
-            filter_segments.append(filter_segment_splits)
+            kernel_matrices, no_neurons, post_shape, kernel_count, inhibitory_matrix, inhib_count = \
+                visual_field_with_kernal(filter[0], filter[1],
+                                         filter_split=filter_split,
+                                         rotation=rotation,
+                                         overlap=overlap,
+                                         plot=False)
 
             # project events to neurons/filter segments
             # shape_pre = np.asarray([fovea_x, fovea_y])
@@ -1004,17 +1082,15 @@ def iCub_main(setup, noise, recording, average_rate=0, npc=64):
             for split in range(filter_split):
                 weight_kernel = np.asarray(kernel_matrices[split]) / (float(kernel_count[split]) * segment_percentage_fire_threshold)
                 weight_kernel = weight_kernel.transpose()
-                proj = p.Projection(vis_pop, filter_segments[-1][split], p.KernelConnector(shape_pre=shape_pre,
-                                                                                           shape_post=shape_post,
-                                                                                           shape_kernel=shape_kernel,
-                                                                                           weight_kernel=weight_kernel,
-                                                                                           post_sample_steps_in_pre=pre_sample_steps,
-                                                                                           post_start_coords_in_pre=start_location
-                                                                                           ))
-                projection_list.append(proj)
-            # p.Projection(vis_pop, filter_segments[-1], p.FromListConnector(segment_connection))
-            filter_populations.append(p.Population(no_neurons, p.IF_curr_exp(*neuron_params),
-                                                      label='filter {} - {}'.format(filter, rotation)))
+                kernel_params["in2seg f{} - r{} - s{}".format(filter[0], rotation, split)] = {
+                    "no_neurons": no_neurons,
+                    "shape_pre": shape_pre,
+                    "shape_post": shape_post,
+                    "shape_kernel": shape_kernel,
+                    "weight_kernel": weight_kernel,
+                    "post_sample_steps_in_pre": pre_sample_steps,
+                    "post_start_coords_in_pre": start_location
+                }
             # connect segments into a single filter neuron
             # shape_pre = np.asarray([fovea_x, fovea_y])
             if fake_full_ATIS:
@@ -1034,58 +1110,62 @@ def iCub_main(setup, noise, recording, average_rate=0, npc=64):
             start_location = np.asarray([peripheral_x+(filter[0]/2), peripheral_y+(filter[1]/2)])
             weight_kernel = np.asarray(inhibitory_matrix) / (inhib_count * inhib_percentage_fire_threshold)
             weight_kernel = weight_kernel.transpose()
-            p.Projection(vis_pop, filter_populations[-1], p.KernelConnector(shape_pre=shape_pre,
-                                                                            shape_post=shape_post,
-                                                                            shape_kernel=shape_kernel,
-                                                                            weight_kernel=weight_kernel,
-                                                                            post_sample_steps_in_pre=pre_sample_steps,
-                                                                            post_start_coords_in_pre=start_location),
-                         receptor_type='inhibitory')
-            weight = (base_weight/filter_split) / filter_percentage_fire_threshold
-            for split in range(filter_split):
-                p.Projection(filter_segments[-1][split], filter_populations[-1], p.OneToOneConnector(), p.StaticSynapse(weight=weight, delay=1))
-            if simulate and record_spikes:
-                filter_populations[-1].record('spikes')
-                for split in range(filter_split):
-                    filter_segments[-1][split].record('spikes')
-            else:
-                filter_populations[-1].record('packets-per-timestep')
-                for split in range(filter_split):
-                    filter_segments[-1][split].record('packets-per-timestep')
-            print("number of neurons in segments = ", no_neurons*filter_split)
-            print("number of neurons in filters = ", no_neurons)
-            # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
+            kernel_params["inhib f{} - r{}".format(filter[0], rotation)] = {
+                "no_neurons": no_neurons,
+                "shape_pre": shape_pre,
+                "shape_post": shape_post,
+                "shape_kernel": shape_kernel,
+                "weight_kernel": weight_kernel,
+                "post_sample_steps_in_pre": pre_sample_steps,
+                "post_start_coords_in_pre": start_location
+            }
+        #     weight = (base_weight/filter_split) / filter_percentage_fire_threshold
+        #     for split in range(filter_split):
+        #         p.Projection(filter_segments[-1][split], filter_populations[-1], p.OneToOneConnector(), p.StaticSynapse(weight=weight, delay=1))
+        #     if simulate and record_spikes:
+        #         filter_populations[-1].record('spikes')
+        #         for split in range(filter_split):
+        #             filter_segments[-1][split].record('spikes')
+        #     else:
+        #         filter_populations[-1].record('packets-per-timestep')
+        #         for split in range(filter_split):
+        #             filter_segments[-1][split].record('packets-per-timestep')
+        #     print("number of neurons in segments = ", no_neurons*filter_split)
+        #     print("number of neurons in filters = ", no_neurons)
+        #     # print "number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection), len(filter_connections), len(inhib_connection))
+        #
+        # print("total number of neurons in segments = ", no_neurons * 8 * filter_split)
+        # print("total number of neurons in filters = ", (no_neurons) * 8)
+        # # print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
+        # # create proto object
+        # # all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
+        # all_proto_object_pops.append(new_proto_objects(filter_populations, filter_populations, filter[0], base_weight,
+        #                                                weight_scale=proto_scale))
+        #
+        # all_filter_segments.append(filter_segments)
+        # all_filter_populations.append(filter_populations)
+        # # opposite inhibition for filter segments
+        # if inhib:
+        #     if inhib == 'all':
+        #         for rotation1 in range(8):
+        #             for rotation2 in range(8):
+        #                 if rotation1 != rotation2:
+        #                     p.Projection(filter_populations[rotation1], filter_populations[rotation2],
+        #                                  p.OneToOneConnector(),
+        #                                  p.StaticSynapse(weight=base_weight, delay=1),
+        #                                  receptor_type='inhibitory')
+        #     else:
+        #         for rotation in range(4):
+        #             p.Projection(filter_populations[rotation], filter_populations[rotation+4],
+        #                          p.OneToOneConnector(),
+        #                          p.StaticSynapse(weight=base_weight, delay=1),
+        #                          receptor_type='inhibitory')
+        #             p.Projection(filter_populations[rotation+4], filter_populations[rotation],
+        #                          p.OneToOneConnector(),
+        #                          p.StaticSynapse(weight=base_weight, delay=1),
+        #                          receptor_type='inhibitory')
 
-        print("total number of neurons in segments = ", no_neurons * 8 * filter_split)
-        print("total number of neurons in filters = ", (no_neurons) * 8)
-        # print "total number of synapses in ATIS->segments: {}, segments->filters: {}, ATIS->filters: {}".format(len(segment_connection)*8, len(filter_connections)*8, len(inhib_connection)*8)
-        # create proto object
-        # all_proto_object_pops.append(proto_objects(filter_populations, filter_populations, filter[0], filter[1], base_weight, weight_scale=proto_scale))
-        all_proto_object_pops.append(new_proto_objects(filter_populations, filter_populations, filter[0], base_weight,
-                                                       weight_scale=proto_scale))
-
-        all_filter_segments.append(filter_segments)
-        all_filter_populations.append(filter_populations)
-        # opposite inhibition for filter segments
-        if inhib:
-            if inhib == 'all':
-                for rotation1 in range(8):
-                    for rotation2 in range(8):
-                        if rotation1 != rotation2:
-                            p.Projection(filter_populations[rotation1], filter_populations[rotation2],
-                                         p.OneToOneConnector(),
-                                         p.StaticSynapse(weight=base_weight, delay=1),
-                                         receptor_type='inhibitory')
-            else:
-                for rotation in range(4):
-                    p.Projection(filter_populations[rotation], filter_populations[rotation+4],
-                                 p.OneToOneConnector(),
-                                 p.StaticSynapse(weight=base_weight, delay=1),
-                                 receptor_type='inhibitory')
-                    p.Projection(filter_populations[rotation+4], filter_populations[rotation],
-                                 p.OneToOneConnector(),
-                                 p.StaticSynapse(weight=base_weight, delay=1),
-                                 receptor_type='inhibitory')
+    kernel_dict_to_populations(kernel_params, vis_pop)
 
     if WTA:
         wta_neuron = p.Population(1, p.IF_curr_exp(*neuron_params), label='WTA')

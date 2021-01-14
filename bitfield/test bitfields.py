@@ -8,11 +8,19 @@ CFG_FILE_NAME = "spynnaker.cfg"
 # the cfg params basic needs
 BASIC_DATA = (
         "[Buffers]\n\n" + "use_auto_pause_and_resume = True\n\n" +
-        "[Simulation]\n\n" + "incoming_spike_buffer_size = 512\n\n" +
+        "[Simulation]\n\n" + "incoming_spike_buffer_size = 1024\n\n" +
         "[Reports]\n\n" + "extract_iobuf = False\n\n" +
         "extract_iobuf_during_run = False\n\n" +
         "clear_iobuf_during_run = False\n\n" +
+        "write_compressor_iobuf = True\n\n"
         "[Machine] \n\ntimeScaleFactor = ")
+'''
+[Mapping]
+router_table_compression_with_bit_field_use_time_cutoff = True
+router_table_compression_with_bit_field_iteration_time = 1000
+router_table_compression_with_bit_field_pre_alloced_sdram = 10000
+router_table_compression_with_bit_field_acceptance_threshold = 0
+'''
 
 def set_config_file(two, twone, three, four, five, time_scale_factor=1):
     """ sets the spynnaker.cfg depending on setup
@@ -30,6 +38,7 @@ def set_config_file(two, twone, three, four, five, time_scale_factor=1):
 
     output.write(BASIC_DATA + "{}\n\n".format(time_scale_factor))
     output.write("[Mapping] \n\n")
+    # output.write('router_table_compression_with_bit_field_iteration_time = 100000\n')  # broken?
     if two:
         output.write("loading_algorithms = MundyOnChipRouterCompression\n")
     if twone:
