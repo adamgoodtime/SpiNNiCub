@@ -15,6 +15,8 @@ from pyNN.utility.plotting import Figure, Panel
 import matplotlib.pyplot as plt
 from SpiNNiCub.generate_events import FakeStimuliBarMoving, fake_circle_moving
 
+import pickle
+
 from pacman.model.constraints.key_allocator_constraints import FixedKeyAndMaskConstraint
 from pacman.model.graphs.application import ApplicationSpiNNakerLinkVertex
 from pacman.model.routing_info import BaseKeyAndMask
@@ -468,7 +470,7 @@ def create_filter_centres(filter_size):
     6 = 0, -0.5
     7 = -0.35, -0.35
     '''
-    base_offset = 0.3
+    base_offset = 0.5
     offsets = [[-base_offset, 0],
                [-base_offset/np.sqrt(2), base_offset/np.sqrt(2)],
                [0, base_offset],
@@ -594,7 +596,7 @@ def convert_filter_xy_to_proto_centre(split_data, overlap):
 
     return x, y
 
-def parse_ATIS(file_location, file_name, fake_full_ATIS=False):
+def parse_ATIS(file_location, file_name, fake_full_ATIS=False, min_time=1250):
     f = open("{}/{}".format(file_location, file_name), "r")
     if fake_full_ATIS:
         events = [[] for i in range(np.power(2, 20))]
@@ -631,7 +633,34 @@ def combine_parsed_ATIS(event_list, fake_full_ATIS=False):
                     max_time = new_time
         time_offset = max_time
     print('maximum time after combining was', np.ceil(max_time))
-    return events
+    return events, max_time
+
+def gather_pickles(top_directory, dir_index):
+    all_directories = []
+    for root, dirs, files in os.walk(top_directory):
+        for file in files:
+            all_directories.append(file)
+    all_directories.sort()
+    max_time = 0.
+    max_x = 640
+    max_y = 480
+    events = [[] for i in range(max_x*max_y)]
+    dir = all_directories[dir_index]
+    file_name = dir.replace(".pickle", "")
+    infile = open(top_directory+dir, 'rb')
+    data = pickle.load(infile)
+    tss = data['data']['/cam0/events']['dvs']['ts']
+    xs = data['data']['/cam0/events']['dvs']['x']
+    ys = data['data']['/cam0/events']['dvs']['y']
+    for ts, x, y in zip(tss, xs, ys):
+        # if x > max_x:
+        #     max_x = x
+        # if y > max_y:
+        #     max_y = y
+        if ts * 1000. > max_time:
+            max_time = ts * 1000.
+        events[(y*max_x)+x].append(ts*1000.)
+    return events, file_name, max_time
 
 def gather_all_ATIS_log(top_directory):
     all_directories = []
@@ -750,77 +779,17 @@ def create_movement(proto, boarder, proto_weight_scale, boarder_weight_scale, ba
     # p.Projection(move_pop, move_pop, p.FromListConnector(inhibit_list), receptor_type='inhibitory')
     return move_pop
 
-x_res = 304
-y_res = 240
-
-simulate = 'real'
-
-if __name__ == '__main__':
-    seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
-                      'ATIS/IROS_from Giulia/no_obj',  # 1
-                      'ATIS/IROS_from Giulia/obj',  # 2
-                      'ATIS/IROS_from Giulia/019',  # 3
-                      'ATIS/IROS_from Giulia/029',  # 4
-                      'ATIS/IROS_from Giulia/085',  # 5
-                      'ATIS/IROS_from Giulia/157',  # 6
-                      'ATIS/IROS_from Giulia/multi_objects_saccade1',  # 7
-                      'ATIS/IROS_from Giulia/object_clutter',  # 8
-                      'ATIS/IROS_from Giulia/object_clutter2',  # 9
-                      'ATIS/IROS_from Giulia/objects_approaching',  # 10
-                      'ATIS/IROS_from Giulia/objects_approaching_no_saccade',  # 11
-                      'ATIS/IROS_from Giulia/paddle_moving_clutter'  # 12
-                      ]
-    fovea_x = 300
-    fovea_y = 236
-    # min for 1 board
-    # fovea_x = 170
-    # fovea_y = 135
-    peripheral_x = (x_res - fovea_x) / 2
-    peripheral_y = (y_res - fovea_y) / 2
-    horizontal_split = 1
-    veritcal_split = 1
-
-    kernel = True
-
-    neuron_params = {
-        # balance the refractory period/tau_mem so membrane has lost contribution before next spike
-    }
-    ##############################
-    # connection configurations: #
-    ##############################
-    # filter_sizes = [30, 46, 70]
-    # filter_sizes = [70, 55, 40]
-    filter_sizes = [104, 73, 51, 36, 25]  # pytorch
-    # filter_sizes = [104, 73, 51, 36]
-    # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
-    # filter_sizes = [46, 30]
-    list_of_filter_sizes = []
-    for filter_size in filter_sizes:
-        list_of_filter_sizes.append([filter_size, filter_size])
-    filter_split = 4
-    original_overlap = 0.75
-    overlap = original_overlap
-    overlap_step = 0
-    base_weight = 5.
-    boarder_percentage_fire_threshold = 0.2
-    segment_percentage_fire_threshold = 0.02
-    filter_percentage_fire_threshold = 0.8
-    inhib_percentage_fire_threshold = 0.01
-    inhib_connect_prob = 1.
-    proto_scale = 0.75
-    inhib = 'all' #[0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
-    WTA = False
-    to_wta = 10.
-    from_wta = 10.
-    self_excite = 0.
-
-    simulate = 'g_subset'
-    data_list_index = 12
+def run_colour(index):
+    global overlap
+    # simulate = 'colour'
+    # events, file_name, max_time = gather_pickles("/data/mbaxrap7/colour_big_subset/", index)
+    events, file_name, max_time = gather_pickles("/data/mbaxrap7/colour_random_subset/", index)
+    # data_list_index = 8
     fake_full_ATIS = False  # functions have had this forced, be careful
     # simulate = None
     if overlap_step:
         overlap = overlap_step
-    label = "{} strd fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(simulate, filter_split, overlap,
+    label = "{} fs-{} ol-{} w-{} bft-{} sft-{} fft-{} ift-{} icp-{} ps-{} in-{}".format(file_name, filter_split, overlap,
                                                                                        base_weight,
                                                                                        boarder_percentage_fire_threshold,
                                                                                        segment_percentage_fire_threshold,
@@ -858,6 +827,9 @@ if __name__ == '__main__':
                     print("\t", location)
                     combined_events.append(parse_ATIS('ATIS/{}/{}'.format(contrast, location), 'decoded_events.txt'))
             events = combine_parsed_ATIS(combined_events)
+        elif simulate == 'colour':
+            print("already gathered")
+            runtime = max_time
         else:
             if simulate == 'all_ATIS':
                 all_directories = gather_all_ATIS_log('ATIS/IROS_attention')
@@ -880,16 +852,11 @@ if __name__ == '__main__':
             for directory in all_directories:
                 print('extracting directory', all_directories.index(directory) + 1, '/', len(all_directories))
                 combined_events.append(parse_ATIS(directory, 'decoded_events.txt'))
-            events = combine_parsed_ATIS(combined_events)
+            events, runtime = combine_parsed_ATIS(combined_events)
         print("Events created")
-        runtime = 0
-        for neuron_id in range(len(events)):
-            for time in events[neuron_id]:
-                if time > runtime:
-                    runtime = time
         runtime = int(np.ceil(runtime)) + 1000
         print("running for", runtime, "ms")
-        if runtime < 2000:
+        if runtime < 2250:
             print("too short")
         p.setup(timestep=1.0)
         if fake_full_ATIS:
@@ -1270,6 +1237,79 @@ if __name__ == '__main__':
     print("done")
 
 
+if __name__ == "__main__":
+
+    x_res = 640
+    y_res = 480
+
+    seperated_list = ['ATIS/IROS_from Giulia/calib_circles',  # 0
+                      'ATIS/IROS_from Giulia/no_obj',  # 1
+                      'ATIS/IROS_from Giulia/obj',  # 2
+                      'ATIS/IROS_from Giulia/019',  # 3
+                      'ATIS/IROS_from Giulia/029',  # 4
+                      'ATIS/IROS_from Giulia/085',  # 5
+                      'ATIS/IROS_from Giulia/157',  # 6
+                      'ATIS/IROS_from Giulia/multi_objects_saccade1',  # 7
+                      'ATIS/IROS_from Giulia/object_clutter',  # 8
+                      'ATIS/IROS_from Giulia/object_clutter2',  # 9
+                      'ATIS/IROS_from Giulia/objects_approaching',  # 10
+                      'ATIS/IROS_from Giulia/objects_approaching_no_saccade',  # 11
+                      'ATIS/IROS_from Giulia/paddle_moving_clutter'  # 12
+                      ]
+
+    fovea_x = 638
+    fovea_y = 478
+    # min for 1 board
+    # fovea_x = 170
+    # fovea_y = 135
+    peripheral_x = (x_res - fovea_x) / 2
+    peripheral_y = (y_res - fovea_y) / 2
+    horizontal_split = 1
+    veritcal_split = 1
+
+    simulate = 'colour'
+
+    kernel = True
+    fake_full_ATIS = False
+
+    neuron_params = {
+        # balance the refractory period/tau_mem so membrane has lost contribution before next spike
+    }
+    ##############################
+    # connection configurations: #
+    ##############################
+    # filter_sizes = [30, 46, 70]
+    # filter_sizes = [70, 55, 40]
+    filter_sizes = [104, 73, 51, 36, 25]  # pytorch
+    # filter_sizes = [104, 73, 51, 36]
+    # filter_sizes = [100, 90, 80, 70, 60, 50, 40, 30, 20]
+    # filter_sizes = [46, 30]
+    list_of_filter_sizes = []
+    for filter_size in filter_sizes:
+        list_of_filter_sizes.append([filter_size, filter_size])
+    filter_split = 4
+    original_overlap = 0.45
+    overlap = original_overlap
+    overlap_step = 0
+    base_weight = 5.
+    boarder_percentage_fire_threshold = 0.2
+    segment_percentage_fire_threshold = 0.02
+    filter_percentage_fire_threshold = 0.8
+    inhib_percentage_fire_threshold = 0.013
+    inhib_connect_prob = 1.
+    proto_scale = 0.75
+    inhib = 'all'  # [0]: +ve+ve, -ve-ve   [1]:+ve-ve, -ve+ve
+    WTA = False
+    to_wta = 10.
+    from_wta = 10.
+    self_excite = 0.
+
+    run_colour(3)
+    # for i in range(39, 50, 1):
+    #     print("starting index", i)
+    #     run_colour(i)
+    #     print("just finished index", i, "/ 50")
+    print("Finished running all tests")
 
 
 
